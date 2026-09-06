@@ -63,5 +63,10 @@ executable to switch to portable mode (everything under `.\data\`).
   folder / rename / delete; a concurrency-limited transfer queue shown in the Transfers panel
   with live progress, speed and per-item cancel; drag-drop between panes; and "Open SFTP" on an
   SSH session (reuses its host + credentials).
+- **M5 — RDP + VNC embedded tabs** ✔ RDP hosts the MSTSC ActiveX control
+  (`AxMsRdpClient9NotSafeForScripting`, interop committed under `src/LwpTerm.App/Interop`) in a
+  `WindowsFormsHost` — server / credentials / fit-to-window (SmartSizing) / clipboard + drive
+  redirect, disconnect-reason surfacing, and an "open in mstsc.exe" fallback. VNC hosts VncSharp's
+  `RemoteDesktop` (view-only + Ctrl+Alt+Del). Secrets are decrypted only at connect time.
 
-Next: **M5 — RDP + VNC embedded tabs**. See `.claude/plans/` for the plan.
+Next: **M6 — polish** (quick-connect, search, tab tear-off, settings, theme, import). See `.claude/plans/`.

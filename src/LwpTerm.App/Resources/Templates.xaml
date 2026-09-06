@@ -30,4 +30,12 @@
         <tabs:FileBrowserView />
     </DataTemplate>
 
+    <DataTemplate DataType="{x:Type tabsvm:RdpTabViewModel}">
+        <tabs:RdpView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type tabsvm:VncTabViewModel}">
+        <tabs:VncView />
+    </DataTemplate>
+
 </ResourceDictionary>

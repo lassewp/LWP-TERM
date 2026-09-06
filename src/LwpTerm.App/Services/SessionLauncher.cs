@@ -2,6 +2,7 @@ using System;
 using LwpTerm.App.ViewModels.Tabs;
 using LwpTerm.Connections;
 using LwpTerm.Core;
+using LwpTerm.Core.Security;
 using LwpTerm.Core.Sessions;
 using Microsoft.Extensions.Logging;
 
@@ -30,6 +31,7 @@ public sealed class SessionLauncher : ISessionLauncher
     private readonly ITerminalConnectionFactory _terminals;
     private readonly IFileTransferConnectionFactory _transfers;
     private readonly TransferQueue _transferQueue;
+    private readonly ICredentialStore _credentials;
     private readonly ILoggerFactory _loggerFactory;
     private readonly AppPaths _paths;
     private readonly ILogger<SessionLauncher> _log;
@@ -38,6 +40,7 @@ public sealed class SessionLauncher : ISessionLauncher
         ITerminalConnectionFactory terminals,
         IFileTransferConnectionFactory transfers,
         TransferQueue transferQueue,
+        ICredentialStore credentials,
         ILoggerFactory loggerFactory,
         AppPaths paths,
         ILogger<SessionLauncher> log)
@@ -45,6 +48,7 @@ public sealed class SessionLauncher : ISessionLauncher
         _terminals = terminals;
         _transfers = transfers;
         _transferQueue = transferQueue;
+        _credentials = credentials;
         _loggerFactory = loggerFactory;
         _paths = paths;
         _log = log;
@@ -68,6 +72,18 @@ public sealed class SessionLauncher : ISessionLauncher
         {
             OpenFileBrowser(item.Name, _transfers.Create(item.Settings), item.Protocol.ToString().ToUpperInvariant());
             return;
+        }
+
+        switch (item.Settings)
+        {
+            case RdpConnectionSettings rdp:
+                Open(new RdpTabViewModel(item.Name, rdp, Reveal(rdp.ProtectedPassword),
+                    _loggerFactory.CreateLogger("Rdp")));
+                return;
+            case VncConnectionSettings vnc:
+                Open(new VncTabViewModel(item.Name, vnc, Reveal(vnc.ProtectedPassword),
+                    _loggerFactory.CreateLogger("Vnc")));
+                return;
         }
 
         Open(new PlaceholderTabViewModel(item.Name, item.Protocol.ToString(), item.Settings.Summary));
@@ -99,4 +115,7 @@ public sealed class SessionLauncher : ISessionLauncher
         var logger = _loggerFactory.CreateLogger("FileBrowser");
         Open(new FileBrowserTabViewModel(title, connection, remote, _transferQueue, logger));
     }
+
+    private string? Reveal(string? blob) =>
+        string.IsNullOrEmpty(blob) ? null : _credentials.Unprotect(blob);
 }

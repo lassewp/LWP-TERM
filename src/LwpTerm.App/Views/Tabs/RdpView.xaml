@@ -1,0 +1,20 @@
+<UserControl x:Class="LwpTerm.App.Views.Tabs.RdpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wf="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+             xmlns:tabsvm="clr-namespace:LwpTerm.App.ViewModels.Tabs"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance tabsvm:RdpTabViewModel}"
+             Background="#101010">
+    <Grid>
+        <wf:WindowsFormsHost x:Name="Host" />
+
+        <StackPanel x:Name="Overlay" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="OverlayText" Text="Connecting…" Foreground="#C0C0C0" HorizontalAlignment="Center" />
+            <Button Content="Open in mstsc.exe instead" Margin="0,12,0,0" Padding="10,4"
+                    Command="{Binding OpenInMstscCommand}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

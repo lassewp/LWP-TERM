@@ -47,6 +47,24 @@
     <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <!-- VncSharp ships as a .NET Framework library; it runs on the Windows Desktop
+         runtime (WinForms + System.Drawing). NU1701 is the cross-TFM advisory. -->
+    <PackageReference Include="VncSharp" Version="1.0.7" NoWarn="NU1701" />
+  </ItemGroup>
+
+  <!-- RDP: interop for the MSTSC ActiveX control (AxMsRdpClient9NotSafeForScripting),
+       generated with AxImp from %WINDIR%\System32\mstscax.dll and committed here. -->
+  <ItemGroup>
+    <Reference Include="MSTSCLib">
+      <HintPath>Interop\MSTSCLib.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="AxMSTSCLib">
+      <HintPath>Interop\AxMSTSCLib.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
 </Project>
