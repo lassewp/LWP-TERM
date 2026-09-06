@@ -44,6 +44,41 @@ dotnet run --project src/LwpTerm.App
 Config, sessions and logs live under `%APPDATA%\LwpTerm\`. Drop a `portable.txt` next to the
 executable to switch to portable mode (everything under `.\data\`).
 
+## Install & update (for users)
+
+1. Open the repo's **[Releases](../../releases)** page and download `LwpTerm-win-Setup.exe`
+   from the latest release.
+2. Run it. Windows SmartScreen shows *"unknown publisher"* the first time — click
+   **More info → Run anyway** (the build is not code-signed).
+3. It installs per-user to `%LocalAppData%\LwpTerm` (no admin), adds a Start-menu / Desktop
+   shortcut, and installs the Microsoft Edge WebView2 runtime if it is missing.
+
+After that the app **updates itself**: it checks for a newer release on launch, downloads it in
+the background, and offers to restart. You can also trigger it from the gear menu ▸
+**Check for updates…**. Your sessions, vault and settings under `%APPDATA%\LwpTerm` are kept
+across updates.
+
+## Releasing (for the maintainer)
+
+A push of a `v*` tag builds, packs and publishes a GitHub Release via
+`.github/workflows/release.yml` (self-contained `win-x64`, packaged with
+[Velopack](https://velopack.io)):
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+Set the repo URL once in `src/LwpTerm.App/Services/UpdateService.cs` (`RepoUrl` const). The
+repo must be **public** for users to download releases without a token. To build a release
+locally:
+
+```bash
+dotnet tool install -g vpk
+dotnet publish src/LwpTerm.App/LwpTerm.App.csproj -c Release -r win-x64 --self-contained true -p:Version=0.2.0 -o publish
+vpk pack --packId LwpTerm --packVersion 0.2.0 --packDir publish --mainExe LwpTerm.exe --packTitle "LWP-TERM" --icon src/LwpTerm.App/app.ico --framework webview2
+```
+
 ## Status
 
 - **M0 — solution skeleton & docking shell** ✔ Generic Host + DI + Serilog, AvalonDock layout

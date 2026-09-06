@@ -77,6 +77,35 @@ public partial class App : Application
         var shell = _host.Services.GetRequiredService<MainWindow>();
         MainWindow = shell;
         shell.Show();
+
+        _ = CheckForUpdatesOnStartupAsync();
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        var updates = _host!.Services.GetRequiredService<IUpdateService>();
+        if (!updates.IsInstalled)
+        {
+            return;
+        }
+
+        var version = await updates.CheckAsync();
+        if (version is null)
+        {
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            MainWindow!,
+            $"LWP-TERM {version} has been downloaded.\n\nRestart now to update?",
+            "Update ready",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information);
+
+        if (answer == MessageBoxResult.Yes)
+        {
+            updates.ApplyAndRestart();
+        }
     }
 
     private bool TryUnlockVault()

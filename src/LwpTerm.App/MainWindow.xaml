@@ -49,6 +49,9 @@
                     </StackPanel>
                     <Button.ContextMenu>
                         <ContextMenu x:Name="ViewMenu">
+                            <MenuItem x:Name="MenuVersion" Header="LWP-TERM" IsEnabled="False" />
+                            <MenuItem Header="Check for updates…" Click="OnCheckUpdates" />
+                            <Separator />
                             <MenuItem Header="Settings…" Click="OnMenuSettings" />
                             <MenuItem Header="Import PuTTY sessions…" Click="OnImportPutty" />
                             <Separator />

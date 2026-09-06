@@ -9,6 +9,7 @@ using LwpTerm.App.ViewModels;
 using LwpTerm.App.ViewModels.Tabs;
 using LwpTerm.App.Views.Dialogs;
 using LwpTerm.Core.Settings;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LwpTerm.App;
 
@@ -52,6 +53,7 @@ public partial class MainWindow : Window
 
     private void OnViewMenu(object sender, RoutedEventArgs e)
     {
+        MenuVersion.Header = $"LWP-TERM {App.Services.GetRequiredService<IUpdateService>().CurrentVersion}";
         MenuPaneSessions.IsChecked = SessionsPane.IsVisible;
         MenuPaneTransfers.IsChecked = TransfersPane.IsVisible;
         MenuPaneLog.IsChecked = LogPane.IsVisible;
@@ -65,6 +67,38 @@ public partial class MainWindow : Window
     private void OnMenuSettings(object sender, RoutedEventArgs e) => _viewModel.OpenSettingsCommand.Execute(null);
 
     private void OnImportPutty(object sender, RoutedEventArgs e) => _viewModel.Sessions.ImportPuttyCommand.Execute(null);
+
+    private async void OnCheckUpdates(object sender, RoutedEventArgs e)
+    {
+        var updates = App.Services.GetRequiredService<IUpdateService>();
+
+        if (!updates.IsInstalled)
+        {
+            MessageBox.Show(this,
+                "Updates are only available in the installed build.\n\n" +
+                $"Current version: {updates.CurrentVersion}",
+                "Check for updates", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var version = await updates.CheckAsync();
+        if (version is null)
+        {
+            MessageBox.Show(this,
+                $"You're on the latest version ({updates.CurrentVersion}).",
+                "Check for updates", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var answer = MessageBox.Show(this,
+            $"LWP-TERM {version} has been downloaded.\n\nRestart now to update?",
+            "Update ready", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+        if (answer == MessageBoxResult.Yes)
+        {
+            updates.ApplyAndRestart();
+        }
+    }
 
     private void OnTogglePane(object sender, RoutedEventArgs e)
     {

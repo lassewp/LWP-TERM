@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISessionLauncher, SessionLauncher>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<ThemeService>();
+        services.AddSingleton<IUpdateService, UpdateService>();
 
         // Panel view models (singletons — one instance per shell)
         services.AddSingleton<SessionTreeViewModel>();

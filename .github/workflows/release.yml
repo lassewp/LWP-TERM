@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # tags + history so vpk can build deltas against the last release
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart('v')
+          "value=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $v"
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Publish (self-contained, win-x64)
+        run: >
+          dotnet publish src/LwpTerm.App/LwpTerm.App.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:Version=${{ steps.ver.outputs.value }}
+          -p:PublishSingleFile=false
+          -o publish
+
+      - name: Download previous release (for deltas)
+        continue-on-error: true
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pack
+        run: >
+          vpk pack
+          --packId LwpTerm
+          --packVersion ${{ steps.ver.outputs.value }}
+          --packDir publish
+          --mainExe LwpTerm.exe
+          --packTitle "LWP-TERM"
+          --icon src/LwpTerm.App/app.ico
+          --framework webview2
+
+      - name: Upload to GitHub Release
+        run: >
+          vpk upload github
+          --repoUrl https://github.com/${{ github.repository }}
+          --token ${{ secrets.GITHUB_TOKEN }}
+          --tag ${{ github.ref_name }}
+          --releaseName "LWP-TERM ${{ steps.ver.outputs.value }}"
+          --publish

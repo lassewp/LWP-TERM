@@ -14,6 +14,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.1.0</Version>
+    <!-- Custom entry point (Program.Main) so Velopack hooks run before WPF. -->
+    <StartupObject>LwpTerm.App.Program</StartupObject>
     <!-- This is a WPF app; per-monitor DPI v2 is declared in app.manifest (which WPF honours).
          WFAC010 is the WinForms-only guidance to move it to a project property. -->
     <NoWarn>$(NoWarn);WFAC010</NoWarn>
@@ -38,6 +40,13 @@
     <Resource Include="app.ico" />
   </ItemGroup>
 
+  <!-- App.xaml compiled as a Page (not ApplicationDefinition) so MSBuild does not
+       generate a Main; Program.Main is the entry point instead. -->
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" SubType="Designer" Generator="MSBuild:Compile" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
@@ -49,6 +58,7 @@
     <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <PackageReference Include="Velopack" Version="1.2.0" />
     <!-- VncSharp ships as a .NET Framework library; it runs on the Windows Desktop
          runtime (WinForms + System.Drawing). NU1701 is the cross-TFM advisory. -->
     <PackageReference Include="VncSharp" Version="1.0.7" NoWarn="NU1701" />
