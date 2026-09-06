@@ -1,15 +1,17 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Palette: dark, MobaXterm-adjacent -->
+    <!-- Default (dark) palette. ThemeService overrides these on Application.Resources
+         at startup for the light theme. -->
     <Color x:Key="Color.Bg">#1E1E1E</Color>
     <Color x:Key="Color.BgAlt">#252526</Color>
     <Color x:Key="Color.Panel">#2D2D30</Color>
     <Color x:Key="Color.Border">#3F3F46</Color>
     <Color x:Key="Color.Text">#F1F1F1</Color>
-    <Color x:Key="Color.TextDim">#A0A0A0</Color>
-    <Color x:Key="Color.Accent">#0E7C3A</Color>
-    <Color x:Key="Color.AccentHover">#12A34B</Color>
+    <Color x:Key="Color.TextDim">#B4B4B4</Color>
+    <Color x:Key="Color.Accent">#3FA65B</Color>
+    <Color x:Key="Color.AccentHover">#54C271</Color>
+    <Color x:Key="Color.Error">#E06C75</Color>
 
     <SolidColorBrush x:Key="Brush.Bg" Color="{StaticResource Color.Bg}" />
     <SolidColorBrush x:Key="Brush.BgAlt" Color="{StaticResource Color.BgAlt}" />
@@ -19,6 +21,7 @@
     <SolidColorBrush x:Key="Brush.TextDim" Color="{StaticResource Color.TextDim}" />
     <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
     <SolidColorBrush x:Key="Brush.AccentHover" Color="{StaticResource Color.AccentHover}" />
+    <SolidColorBrush x:Key="Brush.Error" Color="{StaticResource Color.Error}" />
 
     <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas, Courier New</FontFamily>
     <FontFamily x:Key="Font.Icon">Segoe MDL2 Assets</FontFamily>

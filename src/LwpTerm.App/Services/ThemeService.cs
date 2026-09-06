@@ -13,14 +13,16 @@ public sealed class ThemeService
 {
     private static readonly (string Key, string Dark, string Light)[] Palette =
     {
-        ("Bg",          "#1E1E1E", "#F5F5F5"),
-        ("BgAlt",       "#252526", "#ECECEC"),
-        ("Panel",       "#2D2D30", "#E1E1E1"),
-        ("Border",      "#3F3F46", "#C4C4C4"),
-        ("Text",        "#F1F1F1", "#1B1B1B"),
-        ("TextDim",     "#A0A0A0", "#5A5A5A"),
-        ("Accent",      "#0E7C3A", "#0E7C3A"),
-        ("AccentHover", "#12A34B", "#12A34B"),
+        //  key            dark        light
+        ("Bg",          "#1E1E1E", "#FBFBFB"),
+        ("BgAlt",       "#252526", "#F0F0F0"),
+        ("Panel",       "#2D2D30", "#E6E6E6"),
+        ("Border",      "#3F3F46", "#B4B4B4"),
+        ("Text",        "#F1F1F1", "#151515"),
+        ("TextDim",     "#B4B4B4", "#565656"),
+        ("Accent",      "#3FA65B", "#0E7C3A"),
+        ("AccentHover", "#54C271", "#12A34B"),
+        ("Error",       "#E06C75", "#B3261E"),
     };
 
     public void Apply(AppTheme theme)

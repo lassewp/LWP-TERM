@@ -79,7 +79,7 @@
             <TextBox DockPanel.Dock="Top" Text="{Binding Remote.CurrentPath, Mode=OneWay}" IsReadOnly="True"
                      Background="{StaticResource Brush.Panel}" Foreground="{StaticResource Brush.TextDim}"
                      BorderBrush="{StaticResource Brush.Border}" Padding="4,3" Margin="0,0,0,4" />
-            <TextBlock DockPanel.Dock="Bottom" Text="{Binding Remote.ErrorText}" Foreground="#E06C75"
+            <TextBlock DockPanel.Dock="Bottom" Text="{Binding Remote.ErrorText}" Foreground="{StaticResource Brush.Error}"
                        TextWrapping="Wrap" Margin="2,4,2,0"
                        Visibility="{Binding Remote.ErrorText, Converter={x:Static fb:NullToCollapsedConverter.Instance}}" />
             <DataGrid x:Name="RemoteGrid" ItemsSource="{Binding Remote.Entries}" AutoGenerateColumns="False"
