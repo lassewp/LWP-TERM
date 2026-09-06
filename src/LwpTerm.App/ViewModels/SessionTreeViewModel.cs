@@ -156,19 +156,32 @@ public sealed partial class SessionTreeViewModel : ObservableObject
         await SaveAsync().ConfigureAwait(true);
     }
 
-    // ---- Edit --------------------------------------------------------
+    // ---- Edit (session editor for leaves, folder editor for folders) ------
 
-    [RelayCommand(CanExecute = nameof(CanActOnSession))]
+    [RelayCommand(CanExecute = nameof(CanRename))]
     private async Task Edit(SessionNodeViewModel? node)
     {
         node ??= SelectedNode;
-        if (node?.Item is not { } item)
+        if (node is null)
         {
             return;
         }
 
-        var result = _dialogs.EditSession(item, $"Edit — {item.Name}");
-        if (result is null)
+        bool changed;
+        if (node.Folder is { } folder)
+        {
+            changed = _dialogs.EditFolder(folder, node.Parent is null);
+        }
+        else if (node.Item is { } item)
+        {
+            changed = _dialogs.EditSession(item, $"Edit — {item.Name}") is not null;
+        }
+        else
+        {
+            return;
+        }
+
+        if (!changed)
         {
             return;
         }
@@ -319,6 +332,7 @@ public sealed partial class SessionTreeViewModel : ObservableObject
             siblings.Insert(siblings.IndexOf(target) + 1, source);
         }
 
+        source.RefreshFromModel(); // parent changed → label weight / inherited accent may differ
         RebuildModelFromTree();
         await SaveAsync().ConfigureAwait(true);
     }

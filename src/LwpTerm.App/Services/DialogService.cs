@@ -14,6 +14,9 @@ public interface IDialogService
     /// <summary>Show the session editor. Returns the edited item, or null if cancelled.</summary>
     SessionItem? EditSession(SessionItem? existing, string dialogTitle);
 
+    /// <summary>Show the folder editor; mutates <paramref name="folder"/> on save. Returns true if saved.</summary>
+    bool EditFolder(SessionFolder folder, bool isTopLevel);
+
     /// <summary>Show the settings dialog. Returns true if the user saved.</summary>
     bool ShowSettings();
 
@@ -47,6 +50,17 @@ public sealed class DialogService : IDialogService
         };
 
         return window.ShowDialog() == true ? vm.BuildResult() : null;
+    }
+
+    public bool EditFolder(SessionFolder folder, bool isTopLevel)
+    {
+        var window = new FolderEditorWindow
+        {
+            DataContext = new FolderEditorViewModel(folder, isTopLevel),
+            Title = $"Folder — {folder.Name}",
+            Owner = Application.Current.MainWindow
+        };
+        return window.ShowDialog() == true;
     }
 
     public bool ShowSettings()

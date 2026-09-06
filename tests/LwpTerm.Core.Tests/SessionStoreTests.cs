@@ -96,6 +96,50 @@ public class SessionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Folder_appearance_fields_round_trip()
+    {
+        var tree = new SessionTree
+        {
+            Roots =
+            {
+                new SessionFolder
+                {
+                    Name = "Prod",
+                    ColorHex = "#FF8800",
+                    IconGlyph = "",
+                    LabelWeight = FolderLabelWeight.Bold,
+                    Notes = "critical",
+                    IsExpanded = false
+                }
+            }
+        };
+
+        var store = NewStore();
+        await store.SaveAsync(tree);
+        var folder = (SessionFolder)(await store.LoadAsync()).Roots.Single();
+
+        folder.ColorHex.Should().Be("#FF8800");
+        folder.IconGlyph.Should().Be("");
+        folder.LabelWeight.Should().Be(FolderLabelWeight.Bold);
+        folder.Notes.Should().Be("critical");
+        folder.IsExpanded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Old_folders_without_appearance_fields_load_with_defaults()
+    {
+        await System.IO.File.WriteAllTextAsync(_paths.SessionsFile,
+            """{"version":1,"roots":[{"node":"folder","name":"Legacy","children":[]}]}""");
+
+        var folder = (SessionFolder)(await NewStore().LoadAsync()).Roots.Single();
+
+        folder.Name.Should().Be("Legacy");
+        folder.LabelWeight.Should().Be(FolderLabelWeight.Auto);
+        folder.ColorHex.Should().BeNull();
+        folder.IconGlyph.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Save_is_atomic_and_leaves_no_tmp_file()
     {
         var store = NewStore();

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LwpTerm.Core.Sessions;
 
@@ -37,6 +38,8 @@ public sealed partial class SessionNodeViewModel : ObservableObject
 
     public SessionItem? Item => Model as SessionItem;
 
+    public SessionFolder? Folder => Model as SessionFolder;
+
     public ObservableCollection<SessionNodeViewModel> Children { get; } = new();
 
     [ObservableProperty]
@@ -51,8 +54,20 @@ public sealed partial class SessionNodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isVisible = true;
 
-    /// <summary>Optional accent colour (#RRGGBB) for the leaf row; null for folders / unset.</summary>
-    public string? AccentColor => Item?.ColorHex;
+    /// <summary>Accent colour for the row: own colour, else the parent folder's, else none.</summary>
+    public string? AccentColor =>
+        Item?.ColorHex
+        ?? Folder?.ColorHex
+        ?? Parent?.Folder?.ColorHex;
+
+    /// <summary>Label weight: folders are bold at the tree root unless overridden; leaves stay regular.</summary>
+    public FontWeight LabelFontWeight => Folder switch
+    {
+        null => FontWeights.Normal,
+        { LabelWeight: FolderLabelWeight.Bold } => FontWeights.Bold,
+        { LabelWeight: FolderLabelWeight.Normal } => FontWeights.Normal,
+        _ => Parent is null ? FontWeights.Bold : FontWeights.Normal
+    };
 
     partial void OnNameChanged(string value) => Model.Name = value;
 
@@ -68,9 +83,11 @@ public sealed partial class SessionNodeViewModel : ObservableObject
 
     public string? Target => Item?.Settings.Summary;
 
-    public string Glyph => Item?.IconGlyph ?? DefaultGlyph;
+    public string Glyph => IsFolder
+        ? Folder?.IconGlyph ?? ""          // Folder
+        : Item?.IconGlyph ?? DefaultGlyph;
 
-    /// <summary>Re-reads computed values after the underlying settings were edited.</summary>
+    /// <summary>Re-reads computed values after the underlying model was edited.</summary>
     public void RefreshFromModel()
     {
         Name = Model.Name;
@@ -78,6 +95,7 @@ public sealed partial class SessionNodeViewModel : ObservableObject
         OnPropertyChanged(nameof(Target));
         OnPropertyChanged(nameof(Glyph));
         OnPropertyChanged(nameof(AccentColor));
+        OnPropertyChanged(nameof(LabelFontWeight));
     }
 
     public void SyncChildrenOrderToModel()

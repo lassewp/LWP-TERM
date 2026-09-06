@@ -72,7 +72,8 @@
                         <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icon}"
                                    Margin="0,0,6,0" VerticalAlignment="Center"
                                    Foreground="{StaticResource Brush.TextDim}" />
-                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                   FontWeight="{Binding LabelFontWeight}" />
                         <TextBlock Text="{Binding Target}" Margin="8,0,0,0" VerticalAlignment="Center"
                                    Foreground="{StaticResource Brush.TextDim}" FontSize="11"
                                    Visibility="{Binding IsFolder, Converter={StaticResource BoolToCollapsed}}" />

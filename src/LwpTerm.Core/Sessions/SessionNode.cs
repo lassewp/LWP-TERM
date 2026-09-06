@@ -15,9 +15,28 @@ public abstract class SessionNode
     public string Name { get; set; } = string.Empty;
 }
 
+/// <summary>How a folder's label is weighted in the tree.</summary>
+public enum FolderLabelWeight
+{
+    /// <summary>Bold for top-level folders, regular for nested ones.</summary>
+    Auto,
+    Bold,
+    Normal
+}
+
 public sealed class SessionFolder : SessionNode
 {
     public bool IsExpanded { get; set; } = true;
+
+    /// <summary>Optional Segoe MDL2 glyph override; null uses the default folder glyph.</summary>
+    public string? IconGlyph { get; set; }
+
+    /// <summary>Optional accent colour as <c>#RRGGBB</c>; inherited by child rows that have none.</summary>
+    public string? ColorHex { get; set; }
+
+    public FolderLabelWeight LabelWeight { get; set; } = FolderLabelWeight.Auto;
+
+    public string? Notes { get; set; }
 
     public List<SessionNode> Children { get; set; } = new();
 }

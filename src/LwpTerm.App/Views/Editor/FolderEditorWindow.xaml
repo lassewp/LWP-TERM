@@ -1,0 +1,75 @@
+<Window x:Class="LwpTerm.App.Views.Editor.FolderEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:editor="clr-namespace:LwpTerm.App.ViewModels.Editor"
+        xmlns:vm="clr-namespace:LwpTerm.App.ViewModels"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance editor:FolderEditorViewModel}"
+        Title="Folder" SizeToContent="Height" Width="440"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="{StaticResource Brush.Bg}"
+        TextElement.Foreground="{StaticResource Brush.Text}" FontSize="13">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource Brush.Panel}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+            <Setter Property="Padding" Value="4,3" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="L">
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}" />
+            <Setter Property="Margin" Value="0,10,0,2" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Save" Width="90" Height="28" IsDefault="True" Click="OnSave" />
+            <Button Content="Cancel" Width="90" Height="28" Margin="8,0,0,0" IsCancel="True" />
+        </StackPanel>
+
+        <StackPanel>
+            <TextBlock Text="Name" Style="{StaticResource L}" Margin="0,0,0,2" />
+            <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Text="Icon" Style="{StaticResource L}" />
+            <ComboBox ItemsSource="{Binding IconChoices}" SelectedItem="{Binding SelectedIcon}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icon}"
+                                       Width="20" Foreground="{StaticResource Brush.TextDim}" />
+                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="Accent colour" Style="{StaticResource L}" />
+            <StackPanel Orientation="Horizontal">
+                <Border Width="24" Height="24" CornerRadius="3" BorderThickness="1"
+                        BorderBrush="{StaticResource Brush.Border}" VerticalAlignment="Center"
+                        Background="{Binding ColorHex, Converter={x:Static vm:StringToBrushConverter.Instance}}" />
+                <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}"
+                         Width="120" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="#RRGGBB" />
+                <Button Click="OnPickColour" Margin="6,0,0,0" Width="30" Height="26" ToolTip="Pick a colour">
+                    <TextBlock Text="&#xE790;" FontFamily="{StaticResource Font.Icon}" FontSize="15" />
+                </Button>
+                <Button Click="OnClearColour" Margin="4,0,0,0" Padding="8,0" Height="26" Content="Clear" />
+            </StackPanel>
+
+            <TextBlock Text="Label style" Style="{StaticResource L}" />
+            <ComboBox ItemsSource="{Binding WeightChoices}" SelectedItem="{Binding SelectedWeight}"
+                      DisplayMemberPath="Label" />
+
+            <TextBlock Text="Notes" Style="{StaticResource L}" />
+            <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+    </DockPanel>
+</Window>
