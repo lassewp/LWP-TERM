@@ -6,7 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance editor:SessionEditorViewModel}"
-        Title="Session" Height="600" Width="640"
+        Title="Session" Height="748" Width="680" MinHeight="560" MinWidth="620"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource Brush.Bg}"
         TextElement.Foreground="{StaticResource Brush.Text}" FontSize="13">
@@ -53,7 +53,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="chip" Width="70" Padding="4,7" CornerRadius="4"
+                        <Border x:Name="chip" Width="66" Padding="4,7" CornerRadius="4"
                                 Background="{StaticResource Brush.Panel}"
                                 BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
                                 TextElement.Foreground="{StaticResource Brush.Text}">
@@ -91,12 +91,13 @@
         <ListBox DockPanel.Dock="Top" ItemsSource="{Binding ProtocolChoices}"
                  SelectedValuePath="Protocol" SelectedValue="{Binding SelectedProtocol}"
                  Background="Transparent" BorderThickness="0" Focusable="False"
+                 HorizontalAlignment="Left"
                  ItemContainerStyle="{StaticResource ProtocolChip}"
-                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Disabled">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" />
+                    <WrapPanel Orientation="Horizontal" />
                 </ItemsPanelTemplate>
             </ListBox.ItemsPanel>
         </ListBox>
