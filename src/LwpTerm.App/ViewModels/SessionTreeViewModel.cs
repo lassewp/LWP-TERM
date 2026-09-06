@@ -51,6 +51,39 @@ public sealed partial class SessionTreeViewModel : ObservableObject
     [ObservableProperty]
     private string _filterText = string.Empty;
 
+    partial void OnFilterTextChanged(string value) => ApplyFilter(Roots, (value ?? string.Empty).Trim());
+
+    private static bool ApplyFilter(System.Collections.Generic.IEnumerable<SessionNodeViewModel> nodes, string term)
+    {
+        const StringComparison ic = StringComparison.OrdinalIgnoreCase;
+        var anyVisible = false;
+
+        foreach (var node in nodes)
+        {
+            if (node.IsFolder)
+            {
+                var childVisible = ApplyFilter(node.Children, term);
+                var selfMatch = term.Length == 0 || node.Name.Contains(term, ic);
+                node.IsVisible = childVisible || selfMatch;
+                if (childVisible && term.Length > 0)
+                {
+                    node.IsExpanded = true;
+                }
+            }
+            else
+            {
+                node.IsVisible = term.Length == 0
+                    || node.Name.Contains(term, ic)
+                    || (node.Target?.Contains(term, ic) ?? false)
+                    || (node.Protocol?.Contains(term, ic) ?? false);
+            }
+
+            anyVisible |= node.IsVisible;
+        }
+
+        return anyVisible;
+    }
+
     public async Task LoadAsync()
     {
         _tree = await _store.LoadAsync().ConfigureAwait(true);
@@ -182,6 +215,36 @@ public sealed partial class SessionTreeViewModel : ObservableObject
     }
 
     private bool CanDelete(SessionNodeViewModel? node) => _loaded && (node ?? SelectedNode) is not null;
+
+    // ---- Import ----------------------------------------------------
+
+    [RelayCommand]
+    private async Task ImportPutty()
+    {
+        if (!PuttyImporter.IsAvailable())
+        {
+            _dialogs.Info("No saved PuTTY sessions were found in the registry.", "Import from PuTTY");
+            return;
+        }
+
+        var imported = PuttyImporter.Import();
+        if (imported.Count == 0)
+        {
+            _dialogs.Info("PuTTY sessions were found, but none use a protocol LWP-TERM supports.", "Import from PuTTY");
+            return;
+        }
+
+        var folder = new SessionFolder { Name = "Imported from PuTTY" };
+        foreach (var item in imported)
+        {
+            folder.Children.Add(item);
+        }
+
+        var vm = new SessionNodeViewModel(folder, parent: null);
+        Roots.Add(vm);
+        await SaveAsync().ConfigureAwait(true);
+        _dialogs.Info($"Imported {imported.Count} session(s) from PuTTY.", "Import from PuTTY");
+    }
 
     // ---- Reorder / move (drag-drop) --------------------------------
 

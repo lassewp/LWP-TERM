@@ -68,5 +68,35 @@ executable to switch to portable mode (everything under `.\data\`).
   `WindowsFormsHost` — server / credentials / fit-to-window (SmartSizing) / clipboard + drive
   redirect, disconnect-reason surfacing, and an "open in mstsc.exe" fallback. VNC hosts VncSharp's
   `RemoteDesktop` (view-only + Ctrl+Alt+Del). Secrets are decrypted only at connect time.
+- **M6 — polish** ✔ live recursive tree filter; quick-connect bar
+  (`ssh://user@host:port`, `rdp://host`, bare `host`, …); Settings dialog + `settings.json`
+  (theme, terminal font / size / scrollback, default shell, master-password enable/disable);
+  light + dark palette (applied at startup); per-session accent colour in the tree; import of
+  saved PuTTY sessions from the registry. Document floating (tear-off) is AvalonDock's built-in.
 
-Next: **M6 — polish** (quick-connect, search, tab tear-off, settings, theme, import). See `.claude/plans/`.
+## Manual verification
+
+Build: `dotnet build` · Tests: `dotnet test` (68). Then, against real endpoints:
+
+| Feature | Check |
+|---|---|
+| Unlimited saved sessions / Folders | Right-click Sessions ▸ New Folder / New Session; nest freely; restart — tree persists (`sessions.json`) |
+| Tabs | Open several sessions; drag a document tab out to float it; Ctrl+W closes |
+| SSH | Session to a Linux host; run `tmux` / `vim`; first connect prompts to trust the host key |
+| Telnet | Session to a Telnet service; keys echo, screen apps redraw |
+| Serial | com0com pair or a device; set baud/parity; bytes flow, optional local echo |
+| PowerShell / CMD / WSL | Ctrl+T or a LocalShell session; run `htop` in WSL; resize the window → reflow |
+| SFTP browser | "Open SFTP" on an SSH session; browse, drag a large file across, watch progress + Cancel |
+| FTP | FTP/FTPS session; upload + download; explicit TLS |
+| RDP | RDP session to a Windows host inside a tab; resize (SmartSizing); "open in mstsc.exe" fallback |
+| VNC | VNC session to a server (e.g. TightVNC) inside a tab; interact; Send Ctrl+Alt+Del |
+
+## Known limitations
+
+- SSH sessions don't send window-resize to the remote PTY (SSH.NET has no public API); the PTY
+  keeps its initial size.
+- Theme change and terminal-font change apply to new tabs / after restart, not live to open tabs.
+- "Restore tabs on startup" is stored but not yet implemented; folder-level SFTP/FTP transfers
+  (whole directories) are not yet implemented.
+- The RDP interop and VncSharp are Windows-desktop / .NET Framework components used via
+  `WindowsFormsHost`; the app targets `win-x64`.

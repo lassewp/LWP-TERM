@@ -13,6 +13,11 @@ namespace LwpTerm.App.ViewModels.Tabs;
 /// an <see cref="ITerminalConnection"/>. The view pushes user input / resize /
 /// ready notifications in; the VM raises <see cref="Output"/> for bytes to render.
 /// </summary>
+public sealed record TerminalConfig(string FontFamily, int FontSize, int Scrollback)
+{
+    public static readonly TerminalConfig Default = new("Cascadia Mono, Consolas, monospace", 14, 5000);
+}
+
 public sealed partial class TerminalTabViewModel : SessionTabViewModel
 {
     private static readonly string Esc = char.ConvertFromUtf32(0x1B);
@@ -24,12 +29,13 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
     private bool _connectRequested;
     private FileStream? _sessionLog;
 
-    public TerminalTabViewModel(string title, ITerminalConnection connection, ILogger log, AppPaths paths)
+    public TerminalTabViewModel(string title, ITerminalConnection connection, ILogger log, AppPaths paths, TerminalConfig? config = null)
         : base(title)
     {
         _connection = connection;
         _log = log;
         _paths = paths;
+        Config = config ?? TerminalConfig.Default;
         ToolTip = title;
         StatusText = "Not connected";
 
@@ -42,6 +48,8 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
 
     /// <summary>Raised when the VM wants the view to write a short status line into the terminal.</summary>
     public event Action<string>? Notice;
+
+    public TerminalConfig Config { get; }
 
     public bool IsLogging => _sessionLog is not null;
 

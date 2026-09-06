@@ -69,6 +69,9 @@ public partial class App : Application
             return;
         }
 
+        var settings = _host.Services.GetRequiredService<LwpTerm.Core.Settings.ISettingsStore>().Current;
+        _host.Services.GetRequiredService<Services.ThemeService>().Apply(settings.Theme);
+
         await _host.Services.GetRequiredService<SessionTreeViewModel>().LoadAsync();
 
         var shell = _host.Services.GetRequiredService<MainWindow>();

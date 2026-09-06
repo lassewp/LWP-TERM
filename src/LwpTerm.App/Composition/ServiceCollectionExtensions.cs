@@ -4,6 +4,7 @@ using LwpTerm.App.ViewModels.Panels;
 using LwpTerm.Connections;
 using LwpTerm.Core.Security;
 using LwpTerm.Core.Sessions;
+using LwpTerm.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LwpTerm.App.Composition;
@@ -14,6 +15,7 @@ public static class ServiceCollectionExtensions
     {
         // Core services
         services.AddSingleton<ISessionStore, JsonSessionStore>();
+        services.AddSingleton<ISettingsStore, JsonSettingsStore>();
         services.AddSingleton<ICredentialStore, CredentialStore>();
         services.AddSingleton<KnownHostsStore>();
         services.AddSingleton<IHostKeyVerifier, DialogHostKeyVerifier>();
@@ -25,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ILayoutPersistenceService, LayoutPersistenceService>();
         services.AddSingleton<ISessionLauncher, SessionLauncher>();
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<ThemeService>();
 
         // Panel view models (singletons — one instance per shell)
         services.AddSingleton<SessionTreeViewModel>();

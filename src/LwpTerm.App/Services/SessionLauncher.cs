@@ -4,6 +4,7 @@ using LwpTerm.Connections;
 using LwpTerm.Core;
 using LwpTerm.Core.Security;
 using LwpTerm.Core.Sessions;
+using LwpTerm.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace LwpTerm.App.Services;
@@ -32,6 +33,7 @@ public sealed class SessionLauncher : ISessionLauncher
     private readonly IFileTransferConnectionFactory _transfers;
     private readonly TransferQueue _transferQueue;
     private readonly ICredentialStore _credentials;
+    private readonly ISettingsStore _settings;
     private readonly ILoggerFactory _loggerFactory;
     private readonly AppPaths _paths;
     private readonly ILogger<SessionLauncher> _log;
@@ -41,6 +43,7 @@ public sealed class SessionLauncher : ISessionLauncher
         IFileTransferConnectionFactory transfers,
         TransferQueue transferQueue,
         ICredentialStore credentials,
+        ISettingsStore settings,
         ILoggerFactory loggerFactory,
         AppPaths paths,
         ILogger<SessionLauncher> log)
@@ -49,9 +52,16 @@ public sealed class SessionLauncher : ISessionLauncher
         _transfers = transfers;
         _transferQueue = transferQueue;
         _credentials = credentials;
+        _settings = settings;
         _loggerFactory = loggerFactory;
         _paths = paths;
         _log = log;
+    }
+
+    private TerminalConfig CurrentTerminalConfig()
+    {
+        var s = _settings.Current;
+        return new TerminalConfig(s.TerminalFontFamily, s.TerminalFontSize, s.TerminalScrollback);
     }
 
     public event EventHandler<SessionTabViewModel>? TabRequested;
@@ -64,7 +74,7 @@ public sealed class SessionLauncher : ISessionLauncher
         {
             var connection = _terminals.Create(item.Settings);
             var logger = _loggerFactory.CreateLogger($"Terminal.{item.Protocol}");
-            Open(new TerminalTabViewModel(item.Name, connection, logger, _paths));
+            Open(new TerminalTabViewModel(item.Name, connection, logger, _paths, CurrentTerminalConfig()));
             return;
         }
 
@@ -91,10 +101,11 @@ public sealed class SessionLauncher : ISessionLauncher
 
     public void OpenAdHocLocalShell()
     {
-        var settings = new LocalShellConnectionSettings { ShellKind = LocalShellKind.PowerShell };
+        var kind = _settings.Current.DefaultShell;
+        var settings = new LocalShellConnectionSettings { ShellKind = kind };
         var connection = _terminals.Create(settings);
         var logger = _loggerFactory.CreateLogger("Terminal.LocalShell");
-        Open(new TerminalTabViewModel("PowerShell", connection, logger, _paths));
+        Open(new TerminalTabViewModel(kind.ToString(), connection, logger, _paths, CurrentTerminalConfig()));
     }
 
     public void OpenSftpForSsh(SessionItem sshItem)

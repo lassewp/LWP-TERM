@@ -12,17 +12,20 @@ namespace LwpTerm.App.ViewModels;
 public sealed partial class MainWindowViewModel : ObservableObject
 {
     private readonly ISessionLauncher _launcher;
+    private readonly IDialogService _dialogs;
 
     public MainWindowViewModel(
         SessionTreeViewModel sessions,
         TransfersViewModel transfers,
         LogViewModel log,
-        ISessionLauncher launcher)
+        ISessionLauncher launcher,
+        IDialogService dialogs)
     {
         Sessions = sessions;
         Transfers = transfers;
         Log = log;
         _launcher = launcher;
+        _dialogs = dialogs;
         _launcher.TabRequested += (_, tab) => AddTab(tab);
     }
 
@@ -43,8 +46,24 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     partial void OnActiveDocumentChanged(SessionTabViewModel? value) => OnPropertyChanged(nameof(Title));
 
+    [ObservableProperty]
+    private string _quickConnectText = string.Empty;
+
     [RelayCommand]
     private void NewLocalShell() => _launcher.OpenAdHocLocalShell();
+
+    [RelayCommand]
+    private void QuickConnect()
+    {
+        if (LwpTerm.Core.Sessions.QuickConnectParser.TryParse(QuickConnectText, out var session))
+        {
+            _launcher.Launch(session);
+            QuickConnectText = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenSettings() => _dialogs.ShowSettings();
 
     [RelayCommand]
     private void CloseTab(SessionTabViewModel? tab)

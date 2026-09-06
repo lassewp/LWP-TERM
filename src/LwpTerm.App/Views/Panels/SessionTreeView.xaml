@@ -57,6 +57,8 @@
                 <Style TargetType="TreeViewItem">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                     <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="Visibility"
+                            Value="{Binding IsVisible, Converter={x:Static vm:BoolToVisibilityConverter.Instance}}" />
                     <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnItemPreviewRightDown" />
                 </Style>
             </TreeView.ItemContainerStyle>
@@ -64,6 +66,8 @@
                 <HierarchicalDataTemplate DataType="{x:Type vm:SessionNodeViewModel}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <Border Width="3" Margin="0,1,5,1" CornerRadius="1.5"
+                                Background="{Binding AccentColor, Converter={x:Static vm:StringToBrushConverter.Instance}}" />
                         <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icon}"
                                    Margin="0,0,6,0" VerticalAlignment="Center"
                                    Foreground="{StaticResource Brush.TextDim}" />

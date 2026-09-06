@@ -48,6 +48,12 @@ public sealed partial class SessionNodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    [ObservableProperty]
+    private bool _isVisible = true;
+
+    /// <summary>Optional accent colour (#RRGGBB) for the leaf row; null for folders / unset.</summary>
+    public string? AccentColor => Item?.ColorHex;
+
     partial void OnNameChanged(string value) => Model.Name = value;
 
     partial void OnIsExpandedChanged(bool value)
@@ -71,6 +77,7 @@ public sealed partial class SessionNodeViewModel : ObservableObject
         OnPropertyChanged(nameof(Protocol));
         OnPropertyChanged(nameof(Target));
         OnPropertyChanged(nameof(Glyph));
+        OnPropertyChanged(nameof(AccentColor));
     }
 
     public void SyncChildrenOrderToModel()

@@ -24,24 +24,55 @@
         <!-- Toolbar -->
         <Border DockPanel.Dock="Top" Background="{StaticResource Brush.Panel}"
                 BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Margin="4">
-                <Button Style="{StaticResource ToolbarButton}" Command="{Binding NewLocalShellCommand}"
+            <DockPanel Margin="4">
+                <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}" Command="{Binding NewLocalShellCommand}"
                         ToolTip="New local shell (Ctrl+T)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE756;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
                         <TextBlock Text="New shell" />
                     </StackPanel>
                 </Button>
-                <Separator />
-                <Button Style="{StaticResource ToolbarButton}"
-                        Command="{Binding Sessions.ConnectCommand}"
-                        ToolTip="Connect selected session">
+                <Separator DockPanel.Dock="Left" />
+                <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding Sessions.ConnectCommand}" ToolTip="Connect selected session">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE71B;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
                         <TextBlock Text="Connect" />
                     </StackPanel>
                 </Button>
-            </StackPanel>
+
+                <Button DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding OpenSettingsCommand}" ToolTip="Settings">
+                    <TextBlock Text="&#xE713;" Style="{StaticResource IconText}" />
+                </Button>
+                <Button DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
+                        Command="{Binding Sessions.ImportPuttyCommand}" Content="Import PuTTY" />
+
+                <Grid Margin="16,0,8,0">
+                    <TextBox Text="{Binding QuickConnectText, UpdateSourceTrigger=PropertyChanged}"
+                             Background="{StaticResource Brush.Panel}" Foreground="{StaticResource Brush.Text}"
+                             BorderBrush="{StaticResource Brush.Border}" Padding="4,3"
+                             ToolTip="Quick connect: ssh://user@host:port, telnet://host, rdp://host, …">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{Binding QuickConnectCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <TextBlock Text="Quick connect (Enter)…  e.g. user@host  or  rdp://10.0.0.5"
+                               Margin="6,0,0,0" Foreground="{StaticResource Brush.TextDim}"
+                               IsHitTestVisible="False" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding QuickConnectText}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </DockPanel>
         </Border>
 
         <!-- Status bar -->

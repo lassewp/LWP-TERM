@@ -125,6 +125,7 @@ public partial class TerminalView : UserControl
         switch (msg.Type)
         {
             case "ready":
+                PostConfig();
                 _vm.OnTerminalReady(Math.Max(1, msg.Cols), Math.Max(1, msg.Rows));
                 break;
             case "input":
@@ -169,6 +170,19 @@ public partial class TerminalView : UserControl
 
         var payload = JsonSerializer.Serialize(
             new { type = "output", data = Convert.ToBase64String(bytes) }, JsonOpts);
+        Web.CoreWebView2.PostWebMessageAsString(payload);
+    }
+
+    private void PostConfig()
+    {
+        if (_vm is null || Web.CoreWebView2 is null)
+        {
+            return;
+        }
+
+        var c = _vm.Config;
+        var payload = JsonSerializer.Serialize(
+            new { type = "config", fontFamily = c.FontFamily, fontSize = c.FontSize, scrollback = c.Scrollback }, JsonOpts);
         Web.CoreWebView2.PostWebMessageAsString(payload);
     }
 

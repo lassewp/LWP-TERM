@@ -1,4 +1,5 @@
-* text=auto eol=crlf
+# Keep line endings exactly as written on disk (this is a Windows-only project).
+* -text
 
 *.png binary
 *.jpg binary
