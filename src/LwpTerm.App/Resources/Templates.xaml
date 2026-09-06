@@ -26,4 +26,8 @@
         <tabs:TerminalView />
     </DataTemplate>
 
+    <DataTemplate DataType="{x:Type tabsvm:FileBrowserTabViewModel}">
+        <tabs:FileBrowserView />
+    </DataTemplate>
+
 </ResourceDictionary>

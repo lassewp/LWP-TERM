@@ -18,6 +18,9 @@ public interface ISessionLauncher
     /// <summary>Open an ad-hoc local PowerShell tab (toolbar / Ctrl+T).</summary>
     void OpenAdHocLocalShell();
 
+    /// <summary>Open an SFTP browser that reuses an SSH session's host and credentials.</summary>
+    void OpenSftpForSsh(SessionItem sshItem);
+
     /// <summary>Open an already-constructed tab view model.</summary>
     void Open(SessionTabViewModel tab);
 }
@@ -25,17 +28,23 @@ public interface ISessionLauncher
 public sealed class SessionLauncher : ISessionLauncher
 {
     private readonly ITerminalConnectionFactory _terminals;
+    private readonly IFileTransferConnectionFactory _transfers;
+    private readonly TransferQueue _transferQueue;
     private readonly ILoggerFactory _loggerFactory;
     private readonly AppPaths _paths;
     private readonly ILogger<SessionLauncher> _log;
 
     public SessionLauncher(
         ITerminalConnectionFactory terminals,
+        IFileTransferConnectionFactory transfers,
+        TransferQueue transferQueue,
         ILoggerFactory loggerFactory,
         AppPaths paths,
         ILogger<SessionLauncher> log)
     {
         _terminals = terminals;
+        _transfers = transfers;
+        _transferQueue = transferQueue;
         _loggerFactory = loggerFactory;
         _paths = paths;
         _log = log;
@@ -55,6 +64,12 @@ public sealed class SessionLauncher : ISessionLauncher
             return;
         }
 
+        if (_transfers.Supports(item.Protocol))
+        {
+            OpenFileBrowser(item.Name, _transfers.Create(item.Settings), item.Protocol.ToString().ToUpperInvariant());
+            return;
+        }
+
         Open(new PlaceholderTabViewModel(item.Name, item.Protocol.ToString(), item.Settings.Summary));
     }
 
@@ -66,5 +81,22 @@ public sealed class SessionLauncher : ISessionLauncher
         Open(new TerminalTabViewModel("PowerShell", connection, logger, _paths));
     }
 
+    public void OpenSftpForSsh(SessionItem sshItem)
+    {
+        if (sshItem.Settings is not SshConnectionSettings ssh)
+        {
+            return;
+        }
+
+        OpenFileBrowser($"{sshItem.Name} — SFTP", _transfers.CreateSftpForSsh(ssh), "SFTP");
+    }
+
     public void Open(SessionTabViewModel tab) => TabRequested?.Invoke(this, tab);
+
+    private void OpenFileBrowser(string title, Core.Transfer.IFileTransferConnection connection, string kind)
+    {
+        var remote = new RemoteDirectorySource(connection, kind);
+        var logger = _loggerFactory.CreateLogger("FileBrowser");
+        Open(new FileBrowserTabViewModel(title, connection, remote, _transferQueue, logger));
+    }
 }

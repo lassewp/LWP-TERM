@@ -18,6 +18,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<KnownHostsStore>();
         services.AddSingleton<IHostKeyVerifier, DialogHostKeyVerifier>();
         services.AddSingleton<ITerminalConnectionFactory, TerminalConnectionFactory>();
+        services.AddSingleton<IFileTransferConnectionFactory, FileTransferConnectionFactory>();
+        services.AddSingleton<TransferQueue>();
 
         // App services
         services.AddSingleton<ILayoutPersistenceService, LayoutPersistenceService>();

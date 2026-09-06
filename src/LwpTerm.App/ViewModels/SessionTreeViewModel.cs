@@ -40,6 +40,7 @@ public sealed partial class SessionTreeViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenSftpCommand))]
     [NotifyCanExecuteChangedFor(nameof(EditCommand))]
     [NotifyCanExecuteChangedFor(nameof(DuplicateCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
@@ -78,6 +79,19 @@ public sealed partial class SessionTreeViewModel : ObservableObject
     }
 
     private bool CanActOnSession(SessionNodeViewModel? node) => (node ?? SelectedNode) is { IsFolder: false };
+
+    [RelayCommand(CanExecute = nameof(CanOpenSftp))]
+    private void OpenSftp(SessionNodeViewModel? node)
+    {
+        node ??= SelectedNode;
+        if (node?.Item is { Protocol: LwpTerm.Core.Sessions.ProtocolType.Ssh } item)
+        {
+            _launcher.OpenSftpForSsh(item);
+        }
+    }
+
+    private bool CanOpenSftp(SessionNodeViewModel? node) =>
+        (node ?? SelectedNode)?.Item is { Protocol: LwpTerm.Core.Sessions.ProtocolType.Ssh };
 
     // ---- Add folder ------------------------------------------------------
 

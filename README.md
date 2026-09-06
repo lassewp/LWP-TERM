@@ -58,5 +58,10 @@ executable to switch to portable mode (everything under `.\data\`).
   channel with a `known_hosts` trust store + accept/reject prompt (password / key-file auth),
   a raw Telnet client with a compact NVT/IAC negotiator (SGA/ECHO/TTYPE/NAWS), and
   `System.IO.Ports` serial with configurable line settings and optional local echo.
+- **M4 — SFTP + FTP file browser** ✔ `IFileTransferConnection` with SSH.NET SFTP and FluentFTP
+  (FTP/FTPS) implementations; a dual-pane browser (local ↔ remote) with navigate / up / new
+  folder / rename / delete; a concurrency-limited transfer queue shown in the Transfers panel
+  with live progress, speed and per-item cancel; drag-drop between panes; and "Open SFTP" on an
+  SSH session (reuses its host + credentials).
 
-Next: **M4 — SFTP + FTP file browser**. See `.claude/plans/` for the plan.
+Next: **M5 — RDP + VNC embedded tabs**. See `.claude/plans/` for the plan.

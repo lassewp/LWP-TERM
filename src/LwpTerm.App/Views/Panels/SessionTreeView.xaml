@@ -78,6 +78,8 @@
                 <ContextMenu>
                     <MenuItem Header="Connect"
                               Command="{Binding PlacementTarget.DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="Open SFTP"
+                              Command="{Binding PlacementTarget.DataContext.OpenSftpCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <Separator />
                     <MenuItem Header="New Session…"
                               Command="{Binding PlacementTarget.DataContext.AddSessionCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
