@@ -10,6 +10,9 @@ using LwpTerm.Core.Sessions;
 
 namespace LwpTerm.App.ViewModels.Editor;
 
+/// <summary>One entry in the editor's protocol picker strip.</summary>
+public sealed record ProtocolChoice(ProtocolType Protocol, string Glyph, string Label);
+
 /// <summary>
 /// Backs <c>SessionEditorWindow</c>. Holds a flat, editable projection of every
 /// protocol's fields; <see cref="BuildResult"/> collapses them back into a typed
@@ -17,6 +20,18 @@ namespace LwpTerm.App.ViewModels.Editor;
 /// </summary>
 public sealed partial class SessionEditorViewModel : ObservableObject
 {
+    public IReadOnlyList<ProtocolChoice> ProtocolChoices { get; } = new[]
+    {
+        new ProtocolChoice(ProtocolType.Ssh, "", "SSH"),
+        new ProtocolChoice(ProtocolType.Telnet, "", "Telnet"),
+        new ProtocolChoice(ProtocolType.Serial, "", "Serial"),
+        new ProtocolChoice(ProtocolType.LocalShell, "", "Shell"),
+        new ProtocolChoice(ProtocolType.Sftp, "", "SFTP"),
+        new ProtocolChoice(ProtocolType.Ftp, "", "FTP"),
+        new ProtocolChoice(ProtocolType.Rdp, "", "RDP"),
+        new ProtocolChoice(ProtocolType.Vnc, "", "VNC"),
+    };
+
     private readonly ICredentialStore _credentials;
     private readonly SessionItem? _existing;
 

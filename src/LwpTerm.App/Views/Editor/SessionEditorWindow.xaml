@@ -6,12 +6,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance editor:SessionEditorViewModel}"
-        Title="Session" Height="640" Width="560"
+        Title="Session" Height="600" Width="640"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource Brush.Bg}"
         TextElement.Foreground="{StaticResource Brush.Text}" FontSize="13">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource Brush.Panel}" />
             <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
@@ -29,266 +30,301 @@
         <Style TargetType="ComboBox">
             <Setter Property="Margin" Value="0,2" />
         </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
         <Style TargetType="TextBlock" x:Key="FieldLabel">
             <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}" />
-            <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="Margin" Value="0,8,0,1" />
         </Style>
         <Style TargetType="GroupBox">
             <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}" />
-            <Setter Property="Margin" Value="0,8,0,0" />
-            <Setter Property="Padding" Value="8" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Padding" Value="10" />
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="10,4" />
+        </Style>
+
+        <!-- Protocol picker chips -->
+        <Style x:Key="ProtocolChip" TargetType="ListBoxItem">
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="chip" Width="70" Padding="4,7" CornerRadius="4"
+                                Background="{StaticResource Brush.Panel}"
+                                BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
+                                TextElement.Foreground="{StaticResource Brush.Text}">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icon}"
+                                           FontSize="20" HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding Label}" FontSize="11" Margin="0,3,0,0"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="chip" Property="BorderBrush" Value="{StaticResource Brush.AccentHover}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="chip" Property="Background" Value="{StaticResource Brush.Accent}" />
+                                <Setter TargetName="chip" Property="BorderBrush" Value="{StaticResource Brush.AccentHover}" />
+                                <Setter TargetName="chip" Property="TextElement.Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
     <DockPanel Margin="14">
         <!-- Buttons -->
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button x:Name="SaveButton" Content="Save" Width="90" Height="28" IsDefault="True" Click="OnSave" />
             <Button Content="Cancel" Width="90" Height="28" Margin="8,0,0,0" IsCancel="True" />
         </StackPanel>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <!-- Protocol picker -->
+        <ListBox DockPanel.Dock="Top" ItemsSource="{Binding ProtocolChoices}"
+                 SelectedValuePath="Protocol" SelectedValue="{Binding SelectedProtocol}"
+                 Background="Transparent" BorderThickness="0" Focusable="False"
+                 ItemContainerStyle="{StaticResource ProtocolChip}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+        </ListBox>
+
+        <!-- Basic settings — always visible, protocol-aware -->
+        <GroupBox DockPanel.Dock="Top" Header="Basic settings" Margin="0,12,0,10">
             <StackPanel>
-                <!-- Common -->
-                <TextBlock Text="Name" Style="{StaticResource FieldLabel}" />
+                <TextBlock Text="Name" Style="{StaticResource FieldLabel}" Margin="0,0,0,1" />
                 <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
 
-                <Grid>
+                <!-- Host protocols -->
+                <Grid Visibility="{Binding NeedsHost, Converter={StaticResource BoolToVis}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="12" />
-                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="1.4*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="80" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Protocol" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding AvailableProtocols}" SelectedItem="{Binding SelectedProtocol}" />
+                        <TextBlock Text="Host" Style="{StaticResource FieldLabel}" />
+                        <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" />
                     </StackPanel>
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Accent colour (#RRGGBB)" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" />
+                    <StackPanel Grid.Column="2" Visibility="{Binding ShowUsername, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="Username" Style="{StaticResource FieldLabel}" />
+                        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Text="Port" Style="{StaticResource FieldLabel}" />
+                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
                     </StackPanel>
                 </Grid>
 
-                <!-- Host / port / identity -->
-                <GroupBox Header="Connection" Visibility="{Binding NeedsHost, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="100" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Host" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Port" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </Grid>
-                        <StackPanel Visibility="{Binding ShowUsername, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="Username" Style="{StaticResource FieldLabel}" />
-                            <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
+                <!-- Serial -->
+                <Grid Visibility="{Binding IsSerial, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Serial port" Style="{StaticResource FieldLabel}" />
+                        <ComboBox IsEditable="True" ItemsSource="{Binding SerialPorts}"
+                                  Text="{Binding SerialPortName, UpdateSourceTrigger=PropertyChanged}" />
                     </StackPanel>
-                </GroupBox>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Baud rate" Style="{StaticResource FieldLabel}" />
+                        <ComboBox IsEditable="True" ItemsSource="{Binding CommonBaudRates}"
+                                  Text="{Binding BaudRate, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                </Grid>
 
-                <!-- SSH / SFTP -->
-                <GroupBox Header="SSH" Visibility="{Binding IsSshLike, Converter={StaticResource BoolToVis}}">
+                <!-- Local shell -->
+                <StackPanel Visibility="{Binding IsLocalShell, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Shell" Style="{StaticResource FieldLabel}" />
+                    <ComboBox ItemsSource="{Binding LocalShellKinds}" SelectedItem="{Binding ShellKind}" />
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Advanced / Session tabs -->
+        <TabControl Background="Transparent" BorderBrush="{StaticResource Brush.Border}">
+            <TabItem Header="Advanced">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="2,8,8,2">
                     <StackPanel>
-                        <TextBlock Text="Authentication" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding SshAuthMethods}" SelectedItem="{Binding SshAuthMethod}" />
+                        <!-- SSH / SFTP -->
+                        <StackPanel Visibility="{Binding IsSshLike, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Authentication" Style="{StaticResource FieldLabel}" />
+                            <ComboBox ItemsSource="{Binding SshAuthMethods}" SelectedItem="{Binding SshAuthMethod}" />
 
-                        <StackPanel>
                             <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
                             <PasswordBox x:Name="PasswordBox" />
                             <TextBlock Text="A saved password exists for this session." FontSize="11"
                                        Foreground="{StaticResource Brush.TextDim}"
                                        Visibility="{Binding HasExistingPassword, Converter={StaticResource BoolToVis}}" />
+
+                            <TextBlock Text="Private key file" Style="{StaticResource FieldLabel}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding PrivateKeyPath, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="1" Content="Browse…" Margin="6,2,0,2" Padding="8,0" Click="OnBrowseKey" />
+                            </Grid>
+                            <TextBlock Text="Key passphrase (blank = keep saved)" Style="{StaticResource FieldLabel}" />
+                            <PasswordBox x:Name="PassphraseBox" />
+
+                            <Grid Visibility="{Binding IsSsh, Converter={StaticResource BoolToVis}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="130" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Terminal type" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Text="{Binding TerminalType, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Keep-alive (s)" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Text="{Binding KeepAliveSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <StackPanel Visibility="{Binding IsSsh, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="Startup command" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding StartupCommand, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding IsSftp, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="Initial remote path" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding InitialRemotePath, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
                         </StackPanel>
 
-                        <TextBlock Text="Private key file" Style="{StaticResource FieldLabel}" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Text="{Binding PrivateKeyPath, UpdateSourceTrigger=PropertyChanged}" />
-                            <Button Grid.Column="1" Content="Browse…" Margin="6,2,0,2" Padding="8,0" Click="OnBrowseKey" />
-                        </Grid>
-                        <TextBlock Text="Key passphrase (blank = keep saved)" Style="{StaticResource FieldLabel}" />
-                        <PasswordBox x:Name="PassphraseBox" />
-
-                        <Grid Visibility="{Binding IsSsh, Converter={StaticResource BoolToVis}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="140" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Terminal type" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding TerminalType, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Keep-alive (s)" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding KeepAliveSeconds, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </Grid>
-                        <StackPanel Visibility="{Binding IsSsh, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="Startup command" Style="{StaticResource FieldLabel}" />
-                            <TextBox Text="{Binding StartupCommand, UpdateSourceTrigger=PropertyChanged}" />
+                        <!-- Telnet -->
+                        <StackPanel Visibility="{Binding IsTelnet, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Encoding" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding Encoding, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
-                        <StackPanel Visibility="{Binding IsSftp, Converter={StaticResource BoolToVis}}">
+
+                        <!-- Serial -->
+                        <StackPanel Visibility="{Binding IsSerial, Converter={StaticResource BoolToVis}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Data bits" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Text="{Binding DataBits, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Parity" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox ItemsSource="{Binding Parities}" SelectedItem="{Binding Parity}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Stop bits" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding StopBits}" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="Flow control" Style="{StaticResource FieldLabel}" />
+                            <ComboBox ItemsSource="{Binding Handshakes}" SelectedItem="{Binding Handshake}" />
+                            <CheckBox Content="Local echo" IsChecked="{Binding LocalEcho}" />
+                        </StackPanel>
+
+                        <!-- Local shell -->
+                        <StackPanel Visibility="{Binding IsLocalShell, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="WSL distro (optional)" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding WslDistro, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="Starting directory" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding StartingDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="Extra arguments" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding ShellArguments, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <!-- FTP -->
+                        <StackPanel Visibility="{Binding IsFtp, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
+                            <PasswordBox x:Name="FtpPasswordBox" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Encryption" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox ItemsSource="{Binding FtpEncryptionModes}" SelectedItem="{Binding FtpEncryption}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Data connection" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox ItemsSource="{Binding FtpDataModes}" SelectedItem="{Binding FtpDataMode}" />
+                                </StackPanel>
+                            </Grid>
                             <TextBlock Text="Initial remote path" Style="{StaticResource FieldLabel}" />
                             <TextBox Text="{Binding InitialRemotePath, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
-                    </StackPanel>
-                </GroupBox>
 
-                <!-- Telnet -->
-                <GroupBox Header="Telnet" Visibility="{Binding IsTelnet, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <TextBlock Text="Encoding" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Encoding, UpdateSourceTrigger=PropertyChanged}" />
-                    </StackPanel>
-                </GroupBox>
+                        <!-- RDP -->
+                        <StackPanel Visibility="{Binding IsRdp, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Domain" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding Domain, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
+                            <PasswordBox x:Name="RdpPasswordBox" />
+                            <TextBlock Text="Resolution" Style="{StaticResource FieldLabel}" />
+                            <ComboBox ItemsSource="{Binding RdpResolutionModes}" SelectedItem="{Binding RdpResolutionMode}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Width" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Text="{Binding RdpWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Height" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Text="{Binding RdpHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <CheckBox Content="Redirect clipboard" IsChecked="{Binding RedirectClipboard}" />
+                            <CheckBox Content="Redirect local drives" IsChecked="{Binding RedirectDrives}" Margin="0,4,0,0" />
+                        </StackPanel>
 
-                <!-- Serial -->
-                <GroupBox Header="Serial" Visibility="{Binding IsSerial, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Port" Style="{StaticResource FieldLabel}" />
-                                <ComboBox IsEditable="True" ItemsSource="{Binding SerialPorts}"
-                                          Text="{Binding SerialPortName, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Baud rate" Style="{StaticResource FieldLabel}" />
-                                <ComboBox IsEditable="True" ItemsSource="{Binding CommonBaudRates}"
-                                          Text="{Binding BaudRate, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </Grid>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Data bits" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding DataBits, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Parity" Style="{StaticResource FieldLabel}" />
-                                <ComboBox ItemsSource="{Binding Parities}" SelectedItem="{Binding Parity}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Text="Stop bits" Style="{StaticResource FieldLabel}" />
-                                <ComboBox ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding StopBits}" />
-                            </StackPanel>
-                        </Grid>
-                        <TextBlock Text="Flow control" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding Handshakes}" SelectedItem="{Binding Handshake}" />
-                        <CheckBox Content="Local echo" IsChecked="{Binding LocalEcho}" Margin="0,8,0,0"
-                                  Foreground="{StaticResource Brush.Text}" />
+                        <!-- VNC -->
+                        <StackPanel Visibility="{Binding IsVnc, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
+                            <PasswordBox x:Name="VncPasswordBox" />
+                            <CheckBox Content="View only" IsChecked="{Binding ViewOnly}" />
+                            <TextBlock Text="Quality (0 compression – 9 quality)" Style="{StaticResource FieldLabel}" />
+                            <TextBox Text="{Binding VncQuality, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
                     </StackPanel>
-                </GroupBox>
+                </ScrollViewer>
+            </TabItem>
 
-                <!-- Local shell -->
-                <GroupBox Header="Local shell" Visibility="{Binding IsLocalShell, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <TextBlock Text="Shell" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding LocalShellKinds}" SelectedItem="{Binding ShellKind}" />
-                        <TextBlock Text="WSL distro (optional)" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding WslDistro, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Starting directory" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding StartingDirectory, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Extra arguments" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding ShellArguments, UpdateSourceTrigger=PropertyChanged}" />
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- FTP -->
-                <GroupBox Header="FTP" Visibility="{Binding IsFtp, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
-                        <PasswordBox x:Name="FtpPasswordBox" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Encryption" Style="{StaticResource FieldLabel}" />
-                                <ComboBox ItemsSource="{Binding FtpEncryptionModes}" SelectedItem="{Binding FtpEncryption}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Data connection" Style="{StaticResource FieldLabel}" />
-                                <ComboBox ItemsSource="{Binding FtpDataModes}" SelectedItem="{Binding FtpDataMode}" />
-                            </StackPanel>
-                        </Grid>
-                        <TextBlock Text="Initial remote path" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding InitialRemotePath, UpdateSourceTrigger=PropertyChanged}" />
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- RDP -->
-                <GroupBox Header="RDP" Visibility="{Binding IsRdp, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <TextBlock Text="Domain" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Domain, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
-                        <PasswordBox x:Name="RdpPasswordBox" />
-                        <TextBlock Text="Resolution" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding RdpResolutionModes}" SelectedItem="{Binding RdpResolutionMode}" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="12" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Width" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding RdpWidth, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Height" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding RdpHeight, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </Grid>
-                        <CheckBox Content="Redirect clipboard" IsChecked="{Binding RedirectClipboard}" Margin="0,8,0,0"
-                                  Foreground="{StaticResource Brush.Text}" />
-                        <CheckBox Content="Redirect local drives" IsChecked="{Binding RedirectDrives}" Margin="0,4,0,0"
-                                  Foreground="{StaticResource Brush.Text}" />
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- VNC -->
-                <GroupBox Header="VNC" Visibility="{Binding IsVnc, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <TextBlock Text="Password (blank = keep saved)" Style="{StaticResource FieldLabel}" />
-                        <PasswordBox x:Name="VncPasswordBox" />
-                        <CheckBox Content="View only" IsChecked="{Binding ViewOnly}" Margin="0,8,0,0"
-                                  Foreground="{StaticResource Brush.Text}" />
-                        <TextBlock Text="Quality (0 compression – 9 quality)" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding VncQuality, UpdateSourceTrigger=PropertyChanged}" />
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Notes -->
-                <TextBlock Text="Notes" Style="{StaticResource FieldLabel}" />
-                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="52" />
-            </StackPanel>
-        </ScrollViewer>
+            <TabItem Header="Session">
+                <StackPanel Margin="2,10,8,2">
+                    <TextBlock Text="Accent colour (#RRGGBB)" Style="{StaticResource FieldLabel}" Margin="0,0,0,1" />
+                    <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" Width="140" HorizontalAlignment="Left" />
+                    <TextBlock Text="Notes" Style="{StaticResource FieldLabel}" />
+                    <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" VerticalScrollBarVisibility="Auto" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Window>
