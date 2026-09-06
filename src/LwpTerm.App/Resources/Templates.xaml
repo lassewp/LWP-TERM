@@ -22,4 +22,8 @@
         <tabs:PlaceholderTabView />
     </DataTemplate>
 
+    <DataTemplate DataType="{x:Type tabsvm:TerminalTabViewModel}">
+        <tabs:TerminalView />
+    </DataTemplate>
+
 </ResourceDictionary>

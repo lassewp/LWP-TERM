@@ -1,6 +1,7 @@
 using LwpTerm.App.Services;
 using LwpTerm.App.ViewModels;
 using LwpTerm.App.ViewModels.Panels;
+using LwpTerm.Connections;
 using LwpTerm.Core.Security;
 using LwpTerm.Core.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,7 @@ public static class ServiceCollectionExtensions
         // Core services
         services.AddSingleton<ISessionStore, JsonSessionStore>();
         services.AddSingleton<ICredentialStore, CredentialStore>();
+        services.AddSingleton<ITerminalConnectionFactory, TerminalConnectionFactory>();
 
         // App services
         services.AddSingleton<ILayoutPersistenceService, LayoutPersistenceService>();

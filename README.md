@@ -51,5 +51,8 @@ executable to switch to portable mode (everything under `.\data\`).
 - **M1 — session model, storage & editor** ✔ Polymorphic session tree (`sessions.json`, atomic
   writes), DPAPI credential store with optional master password (`vault.json`), tree CRUD +
   drag-drop reorder, full protocol-aware session editor, master-password unlock prompt at startup.
+- **M2 — terminal core & local shells** ✔ xterm.js hosted in WebView2 with a JSON bridge
+  (input / output / resize), a hand-rolled ConPTY layer (`ITerminalConnection`), and
+  PowerShell / pwsh / CMD / WSL tabs with live resize/reflow and optional per-session logging.
 
-Next: **M2 — terminal core (WebView2 + xterm.js) + local shells**. See `.claude/plans/` for the plan.
+Next: **M3 — SSH + Telnet + Serial**. See `.claude/plans/` for the plan.

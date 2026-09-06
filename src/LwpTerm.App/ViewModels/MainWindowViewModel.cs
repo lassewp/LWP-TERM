@@ -44,7 +44,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     partial void OnActiveDocumentChanged(SessionTabViewModel? value) => OnPropertyChanged(nameof(Title));
 
     [RelayCommand]
-    private void NewLocalShell() => _launcher.Launch("PowerShell", "PowerShell", "powershell.exe");
+    private void NewLocalShell() => _launcher.OpenAdHocLocalShell();
 
     [RelayCommand]
     private void CloseTab(SessionTabViewModel? tab)

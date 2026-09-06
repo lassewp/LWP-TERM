@@ -74,7 +74,7 @@ public sealed partial class SessionTreeViewModel : ObservableObject
             return;
         }
 
-        _launcher.Launch(item.Name, item.Protocol.ToString(), item.Settings.Summary);
+        _launcher.Launch(item);
     }
 
     private bool CanActOnSession(SessionNodeViewModel? node) => (node ?? SelectedNode) is { IsFolder: false };
