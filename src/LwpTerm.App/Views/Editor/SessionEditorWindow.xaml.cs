@@ -1,6 +1,11 @@
+using System;
+using System.Globalization;
 using System.Windows;
 using Microsoft.Win32;
 using LwpTerm.App.ViewModels.Editor;
+using WinFormsColor = System.Drawing.Color;
+using WinFormsColorDialog = System.Windows.Forms.ColorDialog;
+using WinFormsDialogResult = System.Windows.Forms.DialogResult;
 
 namespace LwpTerm.App.Views.Editor;
 
@@ -26,6 +31,43 @@ public partial class SessionEditorWindow : Window
         {
             Vm.PrivateKeyPath = dlg.FileName;
         }
+    }
+
+    private void OnPickColour(object sender, RoutedEventArgs e)
+    {
+        using var dlg = new WinFormsColorDialog { FullOpen = true, AnyColor = true };
+
+        if (TryParseHex(Vm.ColorHex, out var r, out var g, out var b))
+        {
+            dlg.Color = WinFormsColor.FromArgb(r, g, b);
+        }
+
+        if (dlg.ShowDialog() == WinFormsDialogResult.OK)
+        {
+            Vm.ColorHex = $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}";
+        }
+    }
+
+    private void OnClearColour(object sender, RoutedEventArgs e) => Vm.ColorHex = string.Empty;
+
+    private static bool TryParseHex(string? value, out int r, out int g, out int b)
+    {
+        r = g = b = 0;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var hex = value.Trim().TrimStart('#');
+        if (hex.Length != 6
+            || !int.TryParse(hex.AsSpan(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out r)
+            || !int.TryParse(hex.AsSpan(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out g)
+            || !int.TryParse(hex.AsSpan(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private void OnSave(object sender, RoutedEventArgs e)

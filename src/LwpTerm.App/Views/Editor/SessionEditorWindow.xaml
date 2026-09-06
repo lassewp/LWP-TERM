@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:editor="clr-namespace:LwpTerm.App.ViewModels.Editor"
+        xmlns:vm="clr-namespace:LwpTerm.App.ViewModels"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
@@ -49,11 +50,11 @@
 
         <!-- Protocol picker chips -->
         <Style x:Key="ProtocolChip" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="chip" Width="66" Padding="4,7" CornerRadius="4"
+                        <Border x:Name="chip" MinWidth="60" Margin="3,0" Padding="4,7" CornerRadius="4"
                                 Background="{StaticResource Brush.Panel}"
                                 BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
                                 TextElement.Foreground="{StaticResource Brush.Text}">
@@ -87,20 +88,22 @@
             <Button Content="Cancel" Width="90" Height="28" Margin="8,0,0,0" IsCancel="True" />
         </StackPanel>
 
-        <!-- Protocol picker -->
-        <ListBox DockPanel.Dock="Top" ItemsSource="{Binding ProtocolChoices}"
-                 SelectedValuePath="Protocol" SelectedValue="{Binding SelectedProtocol}"
-                 Background="Transparent" BorderThickness="0" Focusable="False"
-                 HorizontalAlignment="Left"
-                 ItemContainerStyle="{StaticResource ProtocolChip}"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
-            <ListBox.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-            </ListBox.ItemsPanel>
-        </ListBox>
+        <!-- Protocol picker: chips share the width evenly up to a cap, then centre;
+             the ScrollViewer only shows a bar when the window is too narrow. -->
+        <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled">
+            <ListBox ItemsSource="{Binding ProtocolChoices}"
+                     SelectedValuePath="Protocol" SelectedValue="{Binding SelectedProtocol}"
+                     Background="Transparent" BorderThickness="0" Focusable="False"
+                     HorizontalAlignment="Center" MaxWidth="760" MinWidth="560"
+                     ItemContainerStyle="{StaticResource ProtocolChip}">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+            </ListBox>
+        </ScrollViewer>
 
         <!-- Basic settings — always visible, protocol-aware -->
         <GroupBox DockPanel.Dock="Top" Header="Basic settings" Margin="0,12,0,10">
@@ -319,8 +322,20 @@
 
             <TabItem Header="Session">
                 <StackPanel Margin="2,10,8,2">
-                    <TextBlock Text="Accent colour (#RRGGBB)" Style="{StaticResource FieldLabel}" Margin="0,0,0,1" />
-                    <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}" Width="140" HorizontalAlignment="Left" />
+                    <TextBlock Text="Accent colour" Style="{StaticResource FieldLabel}" Margin="0,0,0,1" />
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="24" Height="24" CornerRadius="3" BorderThickness="1"
+                                BorderBrush="{StaticResource Brush.Border}" VerticalAlignment="Center"
+                                Background="{Binding ColorHex, Converter={x:Static vm:StringToBrushConverter.Instance}}" />
+                        <TextBox Text="{Binding ColorHex, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="120" Margin="8,0,0,0" VerticalAlignment="Center"
+                                 ToolTip="#RRGGBB — or use the picker" />
+                        <Button Click="OnPickColour" Margin="6,0,0,0" Width="30" Height="26"
+                                ToolTip="Pick a colour">
+                            <TextBlock Text="&#xE790;" FontFamily="{StaticResource Font.Icon}" FontSize="15" />
+                        </Button>
+                        <Button Click="OnClearColour" Margin="4,0,0,0" Padding="8,0" Height="26" Content="Clear" />
+                    </StackPanel>
                     <TextBlock Text="Notes" Style="{StaticResource FieldLabel}" />
                     <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
                              AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" VerticalScrollBarVisibility="Auto" />
