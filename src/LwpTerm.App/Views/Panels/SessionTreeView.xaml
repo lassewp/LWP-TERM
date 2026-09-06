@@ -95,7 +95,7 @@
                               Command="{Binding PlacementTarget.DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <MenuItem Header="Edit…"
                               Command="{Binding PlacementTarget.DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                    <MenuItem Header="Duplicate"
+                    <MenuItem Header="Duplicate…  (Ctrl+D)"
                               Command="{Binding PlacementTarget.DataContext.DuplicateCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <Separator />
                     <MenuItem Header="Delete"

@@ -1,0 +1,40 @@
+<Window x:Class="LwpTerm.App.Views.Dialogs.QuickDuplicateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Duplicate session" SizeToContent="Height" Width="400"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="{StaticResource Brush.Bg}"
+        TextElement.Foreground="{StaticResource Brush.Text}" FontSize="13">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource Brush.Panel}" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+            <Setter Property="Padding" Value="5,4" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="L">
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}" />
+            <Setter Property="Margin" Value="0,10,0,2" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="18">
+        <TextBlock x:Name="SourceLine" Foreground="{StaticResource Brush.TextDim}" FontSize="11" />
+
+        <TextBlock Text="Name" Style="{StaticResource L}" Margin="0,8,0,2" />
+        <TextBox x:Name="NameBox" />
+
+        <StackPanel x:Name="HostGroup">
+            <TextBlock Text="Host / IP" Style="{StaticResource L}" />
+            <TextBox x:Name="HostBox" />
+        </StackPanel>
+
+        <CheckBox x:Name="AddAnotherBox" Content="Add another after this one"
+                  Margin="0,14,0,0" Foreground="{StaticResource Brush.Text}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Add" Width="88" Height="26" IsDefault="True" Click="OnAdd" />
+            <Button Content="Cancel" Width="88" Height="26" Margin="8,0,0,0" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -23,6 +23,9 @@ public interface IDialogService
     /// <summary>Ask for a single line of text. Returns null if cancelled.</summary>
     string? Prompt(string message, string title, string initial = "");
 
+    /// <summary>Quick-duplicate prompt: seeded name (+ host when the protocol has one). Null if cancelled.</summary>
+    Views.Dialogs.QuickDuplicateResult? QuickDuplicate(string sourceName, string seedName, string? seedHost, bool addAnother);
+
     bool Confirm(string message, string title);
 
     void Info(string message, string title);
@@ -75,6 +78,9 @@ public sealed class DialogService : IDialogService
 
     public string? Prompt(string message, string title, string initial = "") =>
         Views.Dialogs.InputDialog.Ask(message, title, initial);
+
+    public Views.Dialogs.QuickDuplicateResult? QuickDuplicate(string sourceName, string seedName, string? seedHost, bool addAnother) =>
+        Views.Dialogs.QuickDuplicateWindow.Prompt(sourceName, seedName, seedHost, addAnother);
 
     public bool Confirm(string message, string title) =>
         MessageBox.Show(

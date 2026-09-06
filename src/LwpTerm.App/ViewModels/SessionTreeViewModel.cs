@@ -214,21 +214,50 @@ public sealed partial class SessionTreeViewModel : ObservableObject
 
     private bool CanRename(SessionNodeViewModel? node) => _loaded && (node ?? SelectedNode) is not null;
 
-    // ---- Duplicate ---------------------------------------------------
+    // ---- Duplicate (quick add: prompt for name + host, optionally repeat) -----
 
     [RelayCommand(CanExecute = nameof(CanActOnSession))]
     private async Task Duplicate(SessionNodeViewModel? node)
     {
         node ??= SelectedNode;
-        if (node?.Item is not { } item)
+        if (node?.Item is not { } source)
         {
             return;
         }
 
-        var clone = CloneItem(item);
-        clone.Name = item.Name + " (copy)";
-        InsertChild(node.Parent, clone, afterSibling: node);
-        await SaveAsync().ConfigureAwait(true);
+        var seedName = source.Name;
+        var seedHost = LwpTerm.Core.Sessions.ConnectionHost.Get(source.Settings);
+        var addAnother = false;
+        var anchor = node;
+
+        while (true)
+        {
+            var result = _dialogs.QuickDuplicate(source.Name, seedName, seedHost, addAnother);
+            if (result is null)
+            {
+                break;
+            }
+
+            var clone = CloneItem(source);
+            clone.Name = string.IsNullOrWhiteSpace(result.Name) ? source.Name : result.Name;
+            if (seedHost is not null && !string.IsNullOrWhiteSpace(result.Host))
+            {
+                LwpTerm.Core.Sessions.ConnectionHost.Set(clone.Settings, result.Host);
+            }
+
+            InsertChild(anchor.Parent, clone, afterSibling: anchor);
+            anchor = SelectedNode ?? anchor;   // InsertChild selects the new node
+            await SaveAsync().ConfigureAwait(true);
+
+            if (!result.AddAnother)
+            {
+                break;
+            }
+
+            addAnother = true;
+            seedName = LwpTerm.Core.Sessions.SessionNumbering.NextName(result.Name);
+            seedHost = seedHost is null ? null : LwpTerm.Core.Sessions.SessionNumbering.NextHost(result.Host);
+        }
     }
 
     // ---- Delete ----------------------------------------------------

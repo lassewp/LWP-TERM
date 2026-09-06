@@ -39,9 +39,20 @@ public partial class SessionTreeView : UserControl
 
     private void OnTreePreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.F2 && Vm is { } vm && vm.RenameCommand.CanExecute(vm.SelectedNode))
+        if (Vm is not { } vm)
+        {
+            return;
+        }
+
+        if (e.Key == Key.F2 && vm.RenameCommand.CanExecute(vm.SelectedNode))
         {
             vm.RenameCommand.Execute(vm.SelectedNode);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.D && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control
+                 && vm.DuplicateCommand.CanExecute(vm.SelectedNode))
+        {
+            vm.DuplicateCommand.Execute(vm.SelectedNode);
             e.Handled = true;
         }
     }
