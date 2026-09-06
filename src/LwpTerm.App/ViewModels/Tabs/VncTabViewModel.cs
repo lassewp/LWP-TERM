@@ -1,11 +1,13 @@
 using System;
+using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using LwpTerm.App.Services;
 using LwpTerm.Core.Sessions;
 using Microsoft.Extensions.Logging;
 
 namespace LwpTerm.App.ViewModels.Tabs;
 
-/// <summary>Hosts an embedded VNC session (VncSharp <c>RemoteDesktop</c>).</summary>
+/// <summary>Hosts an embedded VNC session; the surface lives in <see cref="Host"/> and survives docking / floating.</summary>
 public sealed partial class VncTabViewModel : SessionTabViewModel
 {
     private readonly ILogger _log;
@@ -14,36 +16,47 @@ public sealed partial class VncTabViewModel : SessionTabViewModel
         : base(title)
     {
         Settings = settings;
-        Password = password;
         _log = log;
         ToolTip = $"{settings.Host}:{settings.Port}";
         StatusText = "Not connected";
+
+        Host = new VncSessionHost(settings, password);
+        Host.Connected += () => Dispatch(() => { State = SessionTabState.Connected; StatusText = "Connected"; });
+        Host.ConnectionLost += reason => Dispatch(() =>
+        {
+            State = SessionTabState.Disconnected;
+            StatusText = string.IsNullOrWhiteSpace(reason) ? "Connection lost" : "Connection lost: " + reason;
+        });
     }
 
     public VncConnectionSettings Settings { get; }
 
-    public string? Password { get; }
+    public VncSessionHost Host { get; }
 
-    /// <summary>The view subscribes and forwards Ctrl+Alt+Del to the control.</summary>
-    public event Action? SendCtrlAltDelRequested;
-
-    public void NotifyConnecting() { State = SessionTabState.Connecting; StatusText = "Connecting…"; }
-
-    public void NotifyConnected() { State = SessionTabState.Connected; StatusText = "Connected"; }
-
-    public void NotifyDisconnected(string? reason)
+    public void NotifyConnecting()
     {
-        State = SessionTabState.Disconnected;
-        StatusText = string.IsNullOrWhiteSpace(reason) ? "Disconnected" : "Disconnected: " + reason;
-    }
-
-    public void NotifyFailed(string message)
-    {
-        State = SessionTabState.Faulted;
-        StatusText = "Failed: " + message;
-        _log.LogWarning("VNC '{Title}' failed: {Message}", Title, message);
+        if (State is SessionTabState.Idle or SessionTabState.Disconnected)
+        {
+            State = SessionTabState.Connecting;
+            StatusText = "Connecting…";
+        }
     }
 
     [RelayCommand]
-    private void SendCtrlAltDel() => SendCtrlAltDelRequested?.Invoke();
+    private void SendCtrlAltDel() => Host.SendCtrlAltDel();
+
+    private static void Dispatch(Action action)
+    {
+        var app = Application.Current;
+        if (app is null || app.Dispatcher.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            app.Dispatcher.BeginInvoke(action);
+        }
+    }
+
+    protected override void DisposeCore() => Host.Dispose();
 }

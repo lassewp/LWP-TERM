@@ -1,16 +1,18 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using LwpTerm.App.Services;
 using LwpTerm.Core.Sessions;
 using Microsoft.Extensions.Logging;
 
 namespace LwpTerm.App.ViewModels.Tabs;
 
 /// <summary>
-/// Hosts an embedded Remote Desktop (MSTSC ActiveX) session. The view does the
-/// COM interop; this VM holds settings, state and the "open in mstsc.exe"
-/// fallback.
+/// Hosts an embedded Remote Desktop session. The live surface lives in
+/// <see cref="Host"/> (owned here, re-parented by the view as the tab docks or
+/// floats) so detaching a tab does not drop the session.
 /// </summary>
 public sealed partial class RdpTabViewModel : SessionTabViewModel
 {
@@ -20,32 +22,31 @@ public sealed partial class RdpTabViewModel : SessionTabViewModel
         : base(title)
     {
         Settings = settings;
-        Password = password;
         _log = log;
         ToolTip = $"{settings.Host}:{settings.Port}";
         StatusText = "Not connected";
+
+        Host = new RdpSessionHost(settings, password);
+        Host.Connected += () => Dispatch(() => { State = SessionTabState.Connected; StatusText = "Connected"; });
+        Host.Disconnected += reason => Dispatch(() =>
+        {
+            State = SessionTabState.Disconnected;
+            StatusText = string.IsNullOrWhiteSpace(reason) ? "Disconnected" : "Disconnected: " + reason;
+        });
     }
 
     public RdpConnectionSettings Settings { get; }
 
-    public string? Password { get; }
+    public RdpSessionHost Host { get; }
 
-    /// <summary>Raised by the view when the embedded session ends.</summary>
-    public void NotifyDisconnected(string reason)
+    /// <summary>Called by the view when the surface starts connecting.</summary>
+    public void NotifyConnecting()
     {
-        State = SessionTabState.Disconnected;
-        StatusText = string.IsNullOrWhiteSpace(reason) ? "Disconnected" : "Disconnected: " + reason;
-    }
-
-    public void NotifyConnecting() { State = SessionTabState.Connecting; StatusText = "Connecting…"; }
-
-    public void NotifyConnected() { State = SessionTabState.Connected; StatusText = "Connected"; }
-
-    public void NotifyFailed(string message)
-    {
-        State = SessionTabState.Faulted;
-        StatusText = "Failed: " + message;
-        _log.LogWarning("RDP '{Title}' failed: {Message}", Title, message);
+        if (State is SessionTabState.Idle or SessionTabState.Disconnected)
+        {
+            State = SessionTabState.Connecting;
+            StatusText = "Connecting…";
+        }
     }
 
     [RelayCommand]
@@ -60,7 +61,9 @@ public sealed partial class RdpTabViewModel : SessionTabViewModel
         }
         catch (Exception ex)
         {
-            NotifyFailed(ex.Message);
+            State = SessionTabState.Faulted;
+            StatusText = "Failed: " + ex.Message;
+            _log.LogWarning(ex, "mstsc.exe fallback failed for '{Title}'", Title);
         }
     }
 
@@ -81,4 +84,19 @@ public sealed partial class RdpTabViewModel : SessionTabViewModel
 
         return string.Join(Environment.NewLine, Array.FindAll(lines, l => l.Length > 0));
     }
+
+    private static void Dispatch(Action action)
+    {
+        var app = Application.Current;
+        if (app is null || app.Dispatcher.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            app.Dispatcher.BeginInvoke(action);
+        }
+    }
+
+    protected override void DisposeCore() => Host.Dispose();
 }
