@@ -2,22 +2,23 @@ using System;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using LwpTerm.App.Services;
 using LwpTerm.Core;
 using LwpTerm.Core.Terminal;
 using Microsoft.Extensions.Logging;
 
 namespace LwpTerm.App.ViewModels.Tabs;
 
-/// <summary>
-/// A document tab that hosts a terminal surface (xterm.js in WebView2) driven by
-/// an <see cref="ITerminalConnection"/>. The view pushes user input / resize /
-/// ready notifications in; the VM raises <see cref="Output"/> for bytes to render.
-/// </summary>
 public sealed record TerminalConfig(string FontFamily, int FontSize, int Scrollback)
 {
     public static readonly TerminalConfig Default = new("Cascadia Mono, Consolas, monospace", 14, 5000);
 }
 
+/// <summary>
+/// A terminal document tab. The xterm.js/WebView2 surface lives in
+/// <see cref="Host"/> (owned here) so docking / floating the tab does not lose
+/// the session or its scrollback.
+/// </summary>
 public sealed partial class TerminalTabViewModel : SessionTabViewModel
 {
     private static readonly string Esc = char.ConvertFromUtf32(0x1B);
@@ -35,21 +36,21 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         _connection = connection;
         _log = log;
         _paths = paths;
-        Config = config ?? TerminalConfig.Default;
         ToolTip = title;
         StatusText = "Not connected";
+
+        Host = new TerminalSessionHost(paths);
+        Host.SetConfig(config ?? TerminalConfig.Default);
+        Host.Ready += OnTerminalReady;
+        Host.InputReceived += OnTerminalInput;
+        Host.Resized += OnTerminalResize;
+        Host.Bell += () => { try { System.Media.SystemSounds.Beep.Play(); } catch { /* ignore */ } };
 
         _connection.DataReceived += OnConnectionData;
         _connection.Closed += OnConnectionClosed;
     }
 
-    /// <summary>Raised on the UI thread with bytes the terminal should render.</summary>
-    public event Action<byte[]>? Output;
-
-    /// <summary>Raised when the VM wants the view to write a short status line into the terminal.</summary>
-    public event Action<string>? Notice;
-
-    public TerminalConfig Config { get; }
+    public TerminalSessionHost Host { get; }
 
     public bool IsLogging => _sessionLog is not null;
 
@@ -57,12 +58,15 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
 
     private static string ErrLine(string text) => $"\r\n{Esc}[31m{text}{Esc}[0m\r\n";
 
-    // ---- Called by the view --------------------------------------------
+    // ---- Host events -------------------------------------------------
 
-    public async void OnTerminalReady(int columns, int rows)
+    private async void OnTerminalReady(int columns, int rows)
     {
         if (_connectRequested)
         {
+            // Page reloaded (e.g. re-parent recovery): the buffer already replayed;
+            // just re-sync the size.
+            await SafeResize(columns, rows).ConfigureAwait(true);
             return;
         }
 
@@ -81,11 +85,11 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
             _log.LogError(ex, "Failed to start terminal session '{Title}'", Title);
             State = SessionTabState.Faulted;
             StatusText = "Failed: " + ex.Message;
-            Notice?.Invoke(ErrLine($"[failed to start: {ex.Message}]"));
+            Host.SendNotice(ErrLine($"[failed to start: {ex.Message}]"));
         }
     }
 
-    public async void OnTerminalInput(byte[] data)
+    private async void OnTerminalInput(byte[] data)
     {
         try
         {
@@ -97,7 +101,9 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         }
     }
 
-    public async void OnTerminalResize(int columns, int rows)
+    private async void OnTerminalResize(int columns, int rows) => await SafeResize(columns, rows).ConfigureAwait(true);
+
+    private async System.Threading.Tasks.Task SafeResize(int columns, int rows)
     {
         try
         {
@@ -113,7 +119,7 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         }
     }
 
-    // ---- Connection events -------------------------------------------
+    // ---- Connection events ----------------------------------------
 
     private void OnConnectionData(object? sender, ReadOnlyMemory<byte> data)
     {
@@ -128,39 +134,22 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
             _log.LogDebug(ex, "Session log write failed");
         }
 
-        var app = Application.Current;
-        if (app is null)
-        {
-            Output?.Invoke(copy);
-            return;
-        }
-
-        app.Dispatcher.BeginInvoke(() => Output?.Invoke(copy));
+        Dispatch(() => Host.SendOutput(copy));
     }
 
     private void OnConnectionClosed(object? sender, Exception? error)
     {
-        void Finish()
+        Dispatch(() =>
         {
             State = error is null ? SessionTabState.Disconnected : SessionTabState.Faulted;
             StatusText = error is null ? "Session ended" : "Session ended: " + error.Message;
-            Notice?.Invoke(error is null
+            Host.SendNotice(error is null
                 ? Dim("[session ended]")
                 : ErrLine($"[session ended: {error.Message}]"));
-        }
-
-        var app = Application.Current;
-        if (app is null)
-        {
-            Finish();
-        }
-        else
-        {
-            app.Dispatcher.BeginInvoke(Finish);
-        }
+        });
     }
 
-    // ---- Commands --------------------------------------------------
+    // ---- Commands -----------------------------------------------
 
     [RelayCommand]
     private void ToggleLogging()
@@ -171,7 +160,7 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
             _sessionLog.Dispose();
             _sessionLog = null;
             OnPropertyChanged(nameof(IsLogging));
-            Notice?.Invoke(Dim("[logging stopped]"));
+            Host.SendNotice(Dim("[logging stopped]"));
             return;
         }
 
@@ -180,11 +169,24 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         _sessionLog = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
         OnPropertyChanged(nameof(IsLogging));
         _log.LogInformation("Session logging started: {Path}", path);
-        Notice?.Invoke(Dim($"[logging to {path}]"));
+        Host.SendNotice(Dim($"[logging to {path}]"));
     }
 
     [RelayCommand]
-    private void Reconnect() => Notice?.Invoke(Dim("[reconnect is available from M3]"));
+    private void Reconnect() => Host.SendNotice(Dim("[reconnect is available from M3]"));
+
+    private static void Dispatch(Action action)
+    {
+        var app = Application.Current;
+        if (app is null || app.Dispatcher.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            app.Dispatcher.BeginInvoke(action);
+        }
+    }
 
     protected override void DisposeCore()
     {
@@ -194,6 +196,7 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         _sessionLog?.Dispose();
         _sessionLog = null;
 
+        Host.Dispose();
         _ = _connection.DisposeAsync();
     }
 }
