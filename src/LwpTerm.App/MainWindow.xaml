@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainWindowViewModel}"
         Title="{Binding Title}"
+        Icon="pack://application:,,,/app.ico"
         Height="820" Width="1280"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource Brush.Bg}"

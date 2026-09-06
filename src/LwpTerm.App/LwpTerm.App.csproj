@@ -12,6 +12,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.1.0</Version>
     <!-- This is a WPF app; per-monitor DPI v2 is declared in app.manifest (which WPF honours).
          WFAC010 is the WinForms-only guidance to move it to a project property. -->
@@ -34,6 +35,7 @@
     <Content Include="Assets\webterm\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="app.ico" />
   </ItemGroup>
 
   <ItemGroup>
