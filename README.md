@@ -54,5 +54,9 @@ executable to switch to portable mode (everything under `.\data\`).
 - **M2 — terminal core & local shells** ✔ xterm.js hosted in WebView2 with a JSON bridge
   (input / output / resize), a hand-rolled ConPTY layer (`ITerminalConnection`), and
   PowerShell / pwsh / CMD / WSL tabs with live resize/reflow and optional per-session logging.
+- **M3 — SSH + Telnet + Serial** ✔ Three more `ITerminalConnection` transports: SSH.NET shell
+  channel with a `known_hosts` trust store + accept/reject prompt (password / key-file auth),
+  a raw Telnet client with a compact NVT/IAC negotiator (SGA/ECHO/TTYPE/NAWS), and
+  `System.IO.Ports` serial with configurable line settings and optional local echo.
 
-Next: **M3 — SSH + Telnet + Serial**. See `.claude/plans/` for the plan.
+Next: **M4 — SFTP + FTP file browser**. See `.claude/plans/` for the plan.

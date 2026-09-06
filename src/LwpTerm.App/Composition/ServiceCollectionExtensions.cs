@@ -15,6 +15,8 @@ public static class ServiceCollectionExtensions
         // Core services
         services.AddSingleton<ISessionStore, JsonSessionStore>();
         services.AddSingleton<ICredentialStore, CredentialStore>();
+        services.AddSingleton<KnownHostsStore>();
+        services.AddSingleton<IHostKeyVerifier, DialogHostKeyVerifier>();
         services.AddSingleton<ITerminalConnectionFactory, TerminalConnectionFactory>();
 
         // App services
