@@ -9,6 +9,10 @@
              Background="{StaticResource Brush.BgAlt}"
              TextElement.Foreground="{StaticResource Brush.Text}">
 
+    <UserControl.Resources>
+        <vm:BoolToCollapsedConverter x:Key="BoolToCollapsed" />
+    </UserControl.Resources>
+
     <DockPanel>
         <Grid DockPanel.Dock="Top" Margin="6">
             <TextBox x:Name="FilterBox"
@@ -33,16 +37,27 @@
             </TextBlock>
         </Grid>
 
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="6">
+            <Button Content="＋ Session" Style="{StaticResource ToolbarButton}" Command="{Binding AddSessionCommand}" />
+            <Button Content="＋ Folder" Style="{StaticResource ToolbarButton}" Command="{Binding AddFolderCommand}" />
+        </StackPanel>
+
         <TreeView x:Name="Tree"
                   ItemsSource="{Binding Roots}"
                   Background="Transparent"
                   BorderThickness="0"
                   Foreground="{StaticResource Brush.Text}"
-                  MouseDoubleClick="OnTreeDoubleClick">
+                  AllowDrop="True"
+                  MouseDoubleClick="OnTreeDoubleClick"
+                  PreviewMouseLeftButtonDown="OnTreePreviewMouseLeftButtonDown"
+                  PreviewMouseMove="OnTreePreviewMouseMove"
+                  Drop="OnTreeDrop"
+                  DragOver="OnTreeDragOver">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                     <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnItemPreviewRightDown" />
                 </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.Resources>
@@ -55,21 +70,26 @@
                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding Target}" Margin="8,0,0,0" VerticalAlignment="Center"
                                    Foreground="{StaticResource Brush.TextDim}" FontSize="11"
-                                   Visibility="{Binding IsFolder, Converter={x:Static vm:BoolToCollapsedConverter.Instance}}" />
+                                   Visibility="{Binding IsFolder, Converter={StaticResource BoolToCollapsed}}" />
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.Resources>
             <TreeView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Connect"
-                              Command="{Binding PlacementTarget.DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                              CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                              Command="{Binding PlacementTarget.DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <Separator />
-                    <MenuItem Header="New Session…" IsEnabled="False" />
-                    <MenuItem Header="New Folder…" IsEnabled="False" />
-                    <MenuItem Header="Edit…" IsEnabled="False" />
-                    <MenuItem Header="Duplicate" IsEnabled="False" />
-                    <MenuItem Header="Delete" IsEnabled="False" />
+                    <MenuItem Header="New Session…"
+                              Command="{Binding PlacementTarget.DataContext.AddSessionCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="New Folder…"
+                              Command="{Binding PlacementTarget.DataContext.AddFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="Edit…"
+                              Command="{Binding PlacementTarget.DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="Duplicate"
+                              Command="{Binding PlacementTarget.DataContext.DuplicateCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <Separator />
+                    <MenuItem Header="Delete"
+                              Command="{Binding PlacementTarget.DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                 </ContextMenu>
             </TreeView.ContextMenu>
         </TreeView>

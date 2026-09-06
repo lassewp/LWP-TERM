@@ -6,7 +6,10 @@ using System.Windows;
 using System.Windows.Threading;
 using LwpTerm.App.Composition;
 using LwpTerm.App.Services;
+using LwpTerm.App.ViewModels;
+using LwpTerm.App.Views.Editor;
 using LwpTerm.Core;
+using LwpTerm.Core.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -60,9 +63,30 @@ public partial class App : Application
 
         await _host.StartAsync();
 
+        if (!TryUnlockVault())
+        {
+            Shutdown();
+            return;
+        }
+
+        await _host.Services.GetRequiredService<SessionTreeViewModel>().LoadAsync();
+
         var shell = _host.Services.GetRequiredService<MainWindow>();
         MainWindow = shell;
         shell.Show();
+    }
+
+    private bool TryUnlockVault()
+    {
+        var credentials = _host!.Services.GetRequiredService<ICredentialStore>();
+        if (!credentials.IsLocked)
+        {
+            return true;
+        }
+
+        var prompt = new MasterPasswordWindow(credentials);
+        prompt.ShowDialog();
+        return prompt.Unlocked;
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

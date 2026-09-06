@@ -1,21 +1,43 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using LwpTerm.Core.Sessions;
 
 namespace LwpTerm.App.ViewModels;
 
 /// <summary>
-/// A node in the Sessions tree. In M0 these are populated from sample data;
-/// from M1 they wrap the persisted <c>LwpTerm.Core</c> session model.
+/// A node in the Sessions tree, wrapping a persisted <see cref="SessionNode"/>.
+/// Folders own a live <see cref="Children"/> collection; leaves expose the
+/// protocol and a target summary.
 /// </summary>
 public sealed partial class SessionNodeViewModel : ObservableObject
 {
-    public SessionNodeViewModel(string name, bool isFolder)
+    public SessionNodeViewModel(SessionNode model, SessionNodeViewModel? parent)
     {
-        _name = name;
-        IsFolder = isFolder;
+        Model = model;
+        Parent = parent;
+        _name = model.Name;
+
+        if (model is SessionFolder folder)
+        {
+            _isExpanded = folder.IsExpanded;
+            foreach (var child in folder.Children)
+            {
+                Children.Add(new SessionNodeViewModel(child, this));
+            }
+        }
     }
 
-    public bool IsFolder { get; }
+    public SessionNode Model { get; }
+
+    /// <summary>Container folder VM, or null when this node sits at the tree root. Updated on move.</summary>
+    public SessionNodeViewModel? Parent { get; set; }
+
+    public bool IsFolder => Model is SessionFolder;
+
+    public SessionItem? Item => Model as SessionItem;
+
+    public ObservableCollection<SessionNodeViewModel> Children { get; } = new();
 
     [ObservableProperty]
     private string _name;
@@ -26,28 +48,54 @@ public sealed partial class SessionNodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
-    /// <summary>Protocol label for leaf nodes (e.g. "SSH", "RDP"). Null for folders.</summary>
-    [ObservableProperty]
-    private string? _protocol;
+    partial void OnNameChanged(string value) => Model.Name = value;
 
-    /// <summary>Human-readable connection target for leaf nodes (e.g. "user@host:22").</summary>
-    [ObservableProperty]
-    private string? _target;
-
-    public ObservableCollection<SessionNodeViewModel> Children { get; } = new();
-
-    /// <summary>Segoe MDL2 Assets glyph (private-use code points) shown next to the node.</summary>
-    public string Glyph => IsFolder
-        ? "" // Folder
-        : Protocol switch
+    partial void OnIsExpandedChanged(bool value)
+    {
+        if (Model is SessionFolder folder)
         {
-            "SSH" => "",                          // CommandPrompt
-            "Telnet" => "",                       // Globe
-            "Serial" => "",                       // USB
-            "PowerShell" or "CMD" or "WSL" => "", // CommandPrompt
-            "SFTP" or "FTP" => "",                // NetworkTower
-            "RDP" => "",                          // Remote
-            "VNC" => "",                          // TVMonitor
-            _ => ""                               // AllApps
-        };
+            folder.IsExpanded = value;
+        }
+    }
+
+    public string? Protocol => Item?.Protocol.ToString();
+
+    public string? Target => Item?.Settings.Summary;
+
+    public string Glyph => Item?.IconGlyph ?? DefaultGlyph;
+
+    /// <summary>Re-reads computed values after the underlying settings were edited.</summary>
+    public void RefreshFromModel()
+    {
+        Name = Model.Name;
+        OnPropertyChanged(nameof(Protocol));
+        OnPropertyChanged(nameof(Target));
+        OnPropertyChanged(nameof(Glyph));
+    }
+
+    public void SyncChildrenOrderToModel()
+    {
+        if (Model is not SessionFolder folder)
+        {
+            return;
+        }
+
+        folder.Children.Clear();
+        folder.Children.AddRange(Children.Select(c => c.Model));
+    }
+
+    private string DefaultGlyph => !IsFolder && Item is not null
+        ? Item.Protocol switch
+        {
+            ProtocolType.Ssh => "",
+            ProtocolType.Telnet => "",
+            ProtocolType.Serial => "",
+            ProtocolType.LocalShell => "",
+            ProtocolType.Sftp => "",
+            ProtocolType.Ftp => "",
+            ProtocolType.Rdp => "",
+            ProtocolType.Vnc => "",
+            _ => ""
+        }
+        : "";
 }

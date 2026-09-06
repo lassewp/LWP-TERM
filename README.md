@@ -46,6 +46,10 @@ executable to switch to portable mode (everything under `.\data\`).
 
 ## Status
 
-Milestone **M0 — solution skeleton & docking shell** complete: Generic Host + DI + Serilog,
-AvalonDock layout (Sessions / Transfers / Log panels + document area), sample session tree,
-placeholder tabs, layout persistence. See `.claude/plans/` for the full milestone plan.
+- **M0 — solution skeleton & docking shell** ✔ Generic Host + DI + Serilog, AvalonDock layout
+  (Sessions / Transfers / Log panels + document area), placeholder tabs, layout persistence.
+- **M1 — session model, storage & editor** ✔ Polymorphic session tree (`sessions.json`, atomic
+  writes), DPAPI credential store with optional master password (`vault.json`), tree CRUD +
+  drag-drop reorder, full protocol-aware session editor, master-password unlock prompt at startup.
+
+Next: **M2 — terminal core (WebView2 + xterm.js) + local shells**. See `.claude/plans/` for the plan.
