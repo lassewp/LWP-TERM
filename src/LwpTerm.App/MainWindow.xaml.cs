@@ -26,6 +26,8 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         InitializeComponent();
 
+        WindowSizing.ClampToWorkArea(this, maxWidth: 1280, maxHeight: 820);
+
         Dock.Theme = settings.Current.Theme == AppTheme.Light
             ? new Vs2013LightTheme()
             : new Vs2013DarkTheme();

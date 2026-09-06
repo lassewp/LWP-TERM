@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows;
 using Microsoft.Win32;
+using LwpTerm.App.Services;
 using LwpTerm.App.ViewModels.Editor;
 using WinFormsColor = System.Drawing.Color;
 using WinFormsColorDialog = System.Windows.Forms.ColorDialog;
@@ -14,6 +15,8 @@ public partial class SessionEditorWindow : Window
     public SessionEditorWindow()
     {
         InitializeComponent();
+        // Fits a 768px-tall laptop; the Advanced tab keeps its own scrollbar.
+        WindowSizing.ClampToWorkArea(this, maxWidth: 680, maxHeight: 748);
     }
 
     private SessionEditorViewModel Vm => (SessionEditorViewModel)DataContext;
