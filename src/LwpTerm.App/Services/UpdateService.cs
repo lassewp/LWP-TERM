@@ -25,8 +25,8 @@ public interface IUpdateService
 
 public sealed class UpdateService : IUpdateService
 {
-    // TODO: point this at your PUBLIC GitHub repo so friends can pull releases without a token.
-    private const string RepoUrl = "https://github.com/Lassewp/LWP-TERM";
+    // Public GitHub repo — friends pull releases from here without a token.
+    private const string RepoUrl = "https://github.com/lassewp/LWP-TERM";
 
     private readonly ILogger<UpdateService> _log;
     private readonly UpdateManager _manager;
