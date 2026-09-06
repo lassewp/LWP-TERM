@@ -26,9 +26,11 @@
     <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas, Courier New</FontFamily>
     <FontFamily x:Key="Font.Icon">Segoe MDL2 Assets</FontFamily>
 
+    <!-- DynamicResource so the palette swap done by ThemeService at startup is
+         picked up (StaticResource here would bake the default/dark values). -->
     <Style x:Key="ToolbarButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="10,5" />
         <Setter Property="Cursor" Value="Hand" />
@@ -37,14 +39,15 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="3"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{StaticResource Brush.Panel}" />
+                            <Setter TargetName="b" Property="Background" Value="{DynamicResource Brush.Panel}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground" Value="{StaticResource Brush.TextDim}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextDim}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

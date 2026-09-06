@@ -36,8 +36,26 @@ public sealed class ThemeService
         foreach (var (key, dark, light) in Palette)
         {
             var color = (Color)ColorConverter.ConvertFromString(theme == AppTheme.Light ? light : dark)!;
-            app.Resources["Color." + key] = color;
-            app.Resources["Brush." + key] = new SolidColorBrush(color);
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+
+            // Top-level wins for new lookups; also update every merged dictionary
+            // that already defines the key so DynamicResource references there
+            // (e.g. inside styles) resolve to the active palette.
+            SetEverywhere(app.Resources, "Color." + key, color);
+            SetEverywhere(app.Resources, "Brush." + key, brush);
+        }
+    }
+
+    private static void SetEverywhere(ResourceDictionary root, string key, object value)
+    {
+        root[key] = value;
+        foreach (var merged in root.MergedDictionaries)
+        {
+            if (merged.Contains(key))
+            {
+                merged[key] = value;
+            }
         }
     }
 }
