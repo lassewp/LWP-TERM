@@ -1,0 +1,39 @@
+## .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+_ReSharper*/
+*.DotSettings.user
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/
+publish/
+artifacts/
+
+## Rider
+.idea/
+
+## MSBuild binary log
+*.binlog
+
+## App runtime output (local dev only)
+*.log
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Node (for the bundled xterm.js asset build, if used)
+node_modules/
