@@ -40,9 +40,28 @@
                     </StackPanel>
                 </Button>
 
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
-                        Command="{Binding OpenSettingsCommand}" ToolTip="Settings">
-                    <TextBlock Text="&#xE713;" Style="{StaticResource IconText}" />
+                <Button x:Name="ViewMenuButton" DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
+                        Click="OnViewMenu" ToolTip="Settings &amp; layout">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE713;" Style="{StaticResource IconText}" />
+                        <TextBlock Text="&#xE70D;" Style="{StaticResource IconText}" FontSize="9" Margin="4,1,0,0" />
+                    </StackPanel>
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="ViewMenu">
+                            <MenuItem Header="Settings…" Click="OnMenuSettings" />
+                            <Separator />
+                            <MenuItem x:Name="MenuPaneSessions" Header="Sessions panel" IsCheckable="True"
+                                      Click="OnTogglePane" Tag="Sessions" />
+                            <MenuItem x:Name="MenuPaneTransfers" Header="Transfers panel" IsCheckable="True"
+                                      Click="OnTogglePane" Tag="Transfers" />
+                            <MenuItem x:Name="MenuPaneLog" Header="Log panel" IsCheckable="True"
+                                      Click="OnTogglePane" Tag="Log" />
+                            <Separator />
+                            <MenuItem Header="Reset layout" Click="OnResetLayout" />
+                            <MenuItem Header="Save layout as…" Click="OnSaveLayoutAs" />
+                            <MenuItem x:Name="MenuLayouts" Header="Saved layouts" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
                 </Button>
                 <Button DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
                         Command="{Binding Sessions.ImportPuttyCommand}" Content="Import PuTTY" />
