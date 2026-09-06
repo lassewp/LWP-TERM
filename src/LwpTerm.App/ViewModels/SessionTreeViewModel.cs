@@ -42,6 +42,7 @@ public sealed partial class SessionTreeViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenSftpCommand))]
     [NotifyCanExecuteChangedFor(nameof(EditCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RenameCommand))]
     [NotifyCanExecuteChangedFor(nameof(DuplicateCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddSessionCommand))]
@@ -175,6 +176,30 @@ public sealed partial class SessionTreeViewModel : ObservableObject
         node.RefreshFromModel();
         await SaveAsync().ConfigureAwait(true);
     }
+
+    // ---- Rename (folders and sessions) ----------------------------
+
+    [RelayCommand(CanExecute = nameof(CanRename))]
+    private async Task Rename(SessionNodeViewModel? node)
+    {
+        node ??= SelectedNode;
+        if (node is null)
+        {
+            return;
+        }
+
+        var kind = node.IsFolder ? "folder" : "session";
+        var name = _dialogs.Prompt($"Rename {kind}:", "Rename", node.Name);
+        if (string.IsNullOrWhiteSpace(name) || name.Trim() == node.Name)
+        {
+            return;
+        }
+
+        node.Name = name.Trim();
+        await SaveAsync().ConfigureAwait(true);
+    }
+
+    private bool CanRename(SessionNodeViewModel? node) => _loaded && (node ?? SelectedNode) is not null;
 
     // ---- Duplicate ---------------------------------------------------
 

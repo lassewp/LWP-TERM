@@ -17,6 +17,9 @@ public interface IDialogService
     /// <summary>Show the settings dialog. Returns true if the user saved.</summary>
     bool ShowSettings();
 
+    /// <summary>Ask for a single line of text. Returns null if cancelled.</summary>
+    string? Prompt(string message, string title, string initial = "");
+
     bool Confirm(string message, string title);
 
     void Info(string message, string title);
@@ -55,6 +58,9 @@ public sealed class DialogService : IDialogService
         };
         return window.ShowDialog() == true;
     }
+
+    public string? Prompt(string message, string title, string initial = "") =>
+        Views.Dialogs.InputDialog.Ask(message, title, initial);
 
     public bool Confirm(string message, string title) =>
         MessageBox.Show(

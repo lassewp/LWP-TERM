@@ -37,6 +37,15 @@ public partial class SessionTreeView : UserControl
         }
     }
 
+    private void OnTreePreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F2 && Vm is { } vm && vm.RenameCommand.CanExecute(vm.SelectedNode))
+        {
+            vm.RenameCommand.Execute(vm.SelectedNode);
+            e.Handled = true;
+        }
+    }
+
     private void OnTreeDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (Vm is null)

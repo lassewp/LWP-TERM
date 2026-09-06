@@ -49,6 +49,7 @@
                   Foreground="{StaticResource Brush.Text}"
                   AllowDrop="True"
                   MouseDoubleClick="OnTreeDoubleClick"
+                  PreviewKeyDown="OnTreePreviewKeyDown"
                   PreviewMouseLeftButtonDown="OnTreePreviewMouseLeftButtonDown"
                   PreviewMouseMove="OnTreePreviewMouseMove"
                   Drop="OnTreeDrop"
@@ -89,6 +90,8 @@
                               Command="{Binding PlacementTarget.DataContext.AddSessionCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <MenuItem Header="New Folder…"
                               Command="{Binding PlacementTarget.DataContext.AddFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="Rename…  (F2)"
+                              Command="{Binding PlacementTarget.DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <MenuItem Header="Edit…"
                               Command="{Binding PlacementTarget.DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                     <MenuItem Header="Duplicate"
