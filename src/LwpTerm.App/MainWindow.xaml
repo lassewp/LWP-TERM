@@ -49,6 +49,7 @@
                     <Button.ContextMenu>
                         <ContextMenu x:Name="ViewMenu">
                             <MenuItem Header="Settings…" Click="OnMenuSettings" />
+                            <MenuItem Header="Import PuTTY sessions…" Click="OnImportPutty" />
                             <Separator />
                             <MenuItem x:Name="MenuPaneSessions" Header="Sessions panel" IsCheckable="True"
                                       Click="OnTogglePane" Tag="Sessions" />
@@ -63,9 +64,6 @@
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
-                        Command="{Binding Sessions.ImportPuttyCommand}" Content="Import PuTTY" />
-
                 <Grid Margin="16,0,8,0">
                     <TextBox Text="{Binding QuickConnectText, UpdateSourceTrigger=PropertyChanged}"
                              Background="{StaticResource Brush.Panel}" Foreground="{StaticResource Brush.Text}"

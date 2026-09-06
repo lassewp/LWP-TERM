@@ -64,6 +64,8 @@ public partial class MainWindow : Window
 
     private void OnMenuSettings(object sender, RoutedEventArgs e) => _viewModel.OpenSettingsCommand.Execute(null);
 
+    private void OnImportPutty(object sender, RoutedEventArgs e) => _viewModel.Sessions.ImportPuttyCommand.Execute(null);
+
     private void OnTogglePane(object sender, RoutedEventArgs e)
     {
         var pane = (sender as MenuItem)?.Tag switch
