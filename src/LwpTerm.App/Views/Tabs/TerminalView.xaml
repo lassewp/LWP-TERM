@@ -3,13 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:tabsvm="clr-namespace:LwpTerm.App.ViewModels.Tabs"
              xmlns:tabs="clr-namespace:LwpTerm.App.Views.Tabs"
+             xmlns:panelsvm="clr-namespace:LwpTerm.App.ViewModels.Panels"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance tabsvm:TerminalTabViewModel}"
              Background="#1E1E1E">
     <Grid>
-        <ContentPresenter x:Name="Slot" />
+        <!-- Collapse the WebView2 host while disconnected: it is an HWND surface
+             and would otherwise paint over the WPF reconnect overlay (airspace). -->
+        <ContentPresenter x:Name="Slot"
+                          Visibility="{Binding IsDisconnected, Converter={x:Static panelsvm:InverseBoolToVisibilityConverter.Instance}}" />
         <tabs:SessionDisconnectedOverlay />
     </Grid>
 </UserControl>
