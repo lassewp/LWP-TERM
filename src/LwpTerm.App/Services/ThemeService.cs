@@ -23,6 +23,7 @@ public sealed class ThemeService
         ("Accent",      "#3FA65B", "#0E7C3A"),
         ("AccentHover", "#54C271", "#12A34B"),
         ("Error",       "#E06C75", "#B3261E"),
+        ("Selection",   "#094771", "#CCE4F7"),
     };
 
     public void Apply(AppTheme theme)

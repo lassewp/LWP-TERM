@@ -67,6 +67,18 @@
                 </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.Resources>
+                <!-- Themed selection colours. Without these the selected row falls back
+                     to the system highlight (near-white), which hides the light text
+                     in dark mode. Brush.Text reads well on Brush.Selection in both themes. -->
+                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                                 Color="{StaticResource Color.Selection}" />
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                                 Color="{StaticResource Color.Selection}" />
+                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                                 Color="{StaticResource Color.Text}" />
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                                 Color="{StaticResource Color.Text}" />
+
                 <HierarchicalDataTemplate DataType="{x:Type vm:SessionNodeViewModel}"
                                           ItemsSource="{Binding Children}">
                     <!-- Foreground is pinned to Brush.Text on every row; glyph / target
