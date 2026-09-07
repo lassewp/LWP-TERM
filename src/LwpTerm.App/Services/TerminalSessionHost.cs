@@ -194,7 +194,14 @@ public sealed class TerminalSessionHost
         }
 
         var payload = JsonSerializer.Serialize(
-            new { type = "config", fontFamily = _config.FontFamily, fontSize = _config.FontSize, scrollback = _config.Scrollback },
+            new
+            {
+                type = "config",
+                fontFamily = _config.FontFamily,
+                fontSize = _config.FontSize,
+                scrollback = _config.Scrollback,
+                colorize = _config.ColorizeOutput
+            },
             JsonOpts);
         _web.CoreWebView2.PostWebMessageAsString(payload);
     }

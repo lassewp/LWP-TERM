@@ -24,6 +24,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _terminalFontFamily = s.TerminalFontFamily;
         _terminalFontSize = s.TerminalFontSize;
         _terminalScrollback = s.TerminalScrollback;
+        _colorizeOutput = s.ColorizeOutput;
         _defaultShell = s.DefaultShell;
         _restoreTabs = s.RestoreTabsOnStartup;
         _masterPasswordEnabled = credentials.MasterPasswordEnabled;
@@ -36,6 +37,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _terminalFontFamily;
     [ObservableProperty] private int _terminalFontSize;
     [ObservableProperty] private int _terminalScrollback;
+    [ObservableProperty] private bool _colorizeOutput;
     [ObservableProperty] private LocalShellKind _defaultShell;
     [ObservableProperty] private bool _restoreTabs;
 
@@ -102,6 +104,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             TerminalFontFamily = string.IsNullOrWhiteSpace(TerminalFontFamily) ? "Cascadia Mono, Consolas, monospace" : TerminalFontFamily.Trim(),
             TerminalFontSize = Math.Clamp(TerminalFontSize, 6, 48),
             TerminalScrollback = Math.Clamp(TerminalScrollback, 100, 500_000),
+            ColorizeOutput = ColorizeOutput,
             DefaultShell = DefaultShell,
             RestoreTabsOnStartup = RestoreTabs
         });

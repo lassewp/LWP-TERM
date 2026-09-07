@@ -61,7 +61,7 @@ public sealed class SessionLauncher : ISessionLauncher
     private TerminalConfig CurrentTerminalConfig()
     {
         var s = _settings.Current;
-        return new TerminalConfig(s.TerminalFontFamily, s.TerminalFontSize, s.TerminalScrollback);
+        return new TerminalConfig(s.TerminalFontFamily, s.TerminalFontSize, s.TerminalScrollback, s.ColorizeOutput);
     }
 
     public event EventHandler<SessionTabViewModel>? TabRequested;

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LwpTerm.App.ViewModels.Tabs;
 
-public sealed record TerminalConfig(string FontFamily, int FontSize, int Scrollback)
+public sealed record TerminalConfig(string FontFamily, int FontSize, int Scrollback, bool ColorizeOutput = true)
 {
     public static readonly TerminalConfig Default = new("Cascadia Mono, Consolas, monospace", 14, 5000);
 }

@@ -54,6 +54,47 @@
     var enc = new TextEncoder();
     var dec = new TextDecoder();
 
+    // ---- client-side keyword colouring (MobaXterm-style) --------------
+    var colorize = true;
+
+    var HL = [
+        // interface names (Cisco / generic) -> magenta
+        [/\b((?:Gigabit|TenGigabit|FortyGig|HundredGig|Fast|Ten|Forty)?Ethernet|Gi|Te|Fa|Eth|Vlan|Port-?channel|Po|Loopback|Lo|Tunnel|Tu|Serial|Se|mgmt|Management)\d+(?:[/.:]\d+)*\b/g, 95],
+        // IPv4 (+ optional /prefix) -> bright cyan
+        [/\b(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?\b/g, 96],
+        // MAC address -> cyan
+        [/\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b|\b(?:[0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4}\b/g, 36],
+        // good states -> green
+        [/\b(up|yes|ok|active|connected|enabled?|permit(?:ted)?|success(?:ful)?|reachable|established|forwarding|valid|passed)\b/gi, 92],
+        // bad states -> red
+        [/\b(down|no|deny|denied|disabled?|err(?:or)?|err-?disabled?|fail(?:ed|ure)?|unreachable|notconnect|shutdown|blocked|invalid|expired|timeout|refused)\b/gi, 91],
+        // in-between states -> yellow
+        [/\b(unassigned|unset|unknown|warning|warn|listen(?:ing)?|learning|blocking|half|pending|partial)\b/gi, 93]
+    ];
+
+    function applyHighlight(s) {
+        for (var i = 0; i < HL.length; i++) {
+            var code = HL[i][1];
+            s = s.replace(HL[i][0], "\x1b[" + code + "m$&\x1b[39m");
+        }
+        return s;
+    }
+
+    // Only recolour pure-ASCII chunks that carry no escapes of their own, so
+    // server-supplied colour and multi-byte text are left untouched.
+    function maybeColorize(bytes) {
+        if (!colorize || bytes.length === 0 || bytes.length > 20000) {
+            return null;
+        }
+        for (var i = 0; i < bytes.length; i++) {
+            var b = bytes[i];
+            if (b === 0x1b || b >= 0x80) {
+                return null;
+            }
+        }
+        return applyHighlight(dec.decode(bytes));
+    }
+
     function b64ToBytes(b64) {
         var bin = atob(b64);
         var out = new Uint8Array(bin.length);
@@ -122,14 +163,18 @@
     // ---- host -> terminal ---------------------------------------------
     function handle(msg) {
         switch (msg.type) {
-            case "output":
-                term.write(b64ToBytes(msg.data));
+            case "output": {
+                var bytes = b64ToBytes(msg.data);
+                var colored = maybeColorize(bytes);
+                term.write(colored !== null ? colored : bytes);
                 break;
+            }
             case "config":
                 if (msg.fontFamily) { term.options.fontFamily = msg.fontFamily; }
                 if (msg.fontSize) { term.options.fontSize = msg.fontSize; }
                 if (msg.scrollback) { term.options.scrollback = msg.scrollback; }
                 if (msg.theme) { term.options.theme = msg.theme; }
+                if (typeof msg.colorize === "boolean") { colorize = msg.colorize; }
                 scheduleFit();
                 break;
             case "clear":

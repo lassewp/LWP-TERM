@@ -22,6 +22,9 @@ public sealed class AppSettings
 
     public int TerminalScrollback { get; set; } = 5000;
 
+    /// <summary>Client-side keyword colouring of plain terminal output (IPs, up/down, yes/no, …).</summary>
+    public bool ColorizeOutput { get; set; } = true;
+
     public LocalShellKind DefaultShell { get; set; } = LocalShellKind.PowerShell;
 
     public bool RestoreTabsOnStartup { get; set; }

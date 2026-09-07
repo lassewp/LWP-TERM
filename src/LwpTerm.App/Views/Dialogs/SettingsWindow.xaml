@@ -6,7 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:SettingsViewModel}"
-        Title="Settings" Height="470" Width="460"
+        Title="Settings" Height="510" Width="460"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
         Background="{StaticResource Brush.Bg}"
         TextElement.Foreground="{StaticResource Brush.Text}" FontSize="13">
@@ -55,8 +55,12 @@
             <TextBlock Text="Default shell (Ctrl+T / toolbar)" Style="{StaticResource L}" />
             <ComboBox ItemsSource="{Binding Shells}" SelectedItem="{Binding DefaultShell}" />
 
-            <CheckBox Content="Restore open tabs on startup" IsChecked="{Binding RestoreTabs}"
+            <CheckBox Content="Colourise terminal output (highlight IPs, up/down, yes/no, …)"
+                      IsChecked="{Binding ColorizeOutput}"
                       Margin="0,14,0,0" Foreground="{StaticResource Brush.Text}" />
+
+            <CheckBox Content="Restore open tabs on startup" IsChecked="{Binding RestoreTabs}"
+                      Margin="0,10,0,0" Foreground="{StaticResource Brush.Text}" />
 
             <Separator Margin="0,14" />
 
