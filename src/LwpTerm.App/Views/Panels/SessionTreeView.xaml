@@ -56,6 +56,9 @@
                   DragOver="OnTreeDragOver">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
+                    <!-- Set locally: TreeViewItem otherwise falls back to the system
+                         control-text colour (black), which is unreadable on the dark panel. -->
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                     <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                     <Setter Property="Visibility"
@@ -66,9 +69,11 @@
             <TreeView.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type vm:SessionNodeViewModel}"
                                           ItemsSource="{Binding Children}">
-                    <!-- Glyph / target use inherited foreground at reduced opacity so they
-                         dim in both themes and stay readable on the selection highlight. -->
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <!-- Foreground is pinned to Brush.Text on every row; glyph / target
+                         then dim via opacity so they stay readable in both themes and
+                         on the selection highlight. -->
+                    <StackPanel Orientation="Horizontal" Margin="0,2"
+                                TextElement.Foreground="{StaticResource Brush.Text}">
                         <Border Width="3" Margin="0,1,5,1" CornerRadius="1.5"
                                 Background="{Binding AccentColor, Converter={x:Static vm:StringToBrushConverter.Instance}}" />
                         <TextBlock Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icon}"
