@@ -30,6 +30,8 @@ public sealed class RdpSessionHost : IDisposable
     private bool _disposed;
     private int _pendingW;
     private int _pendingH;
+    private int _lastW;
+    private int _lastH;
 
     public RdpSessionHost(RdpConnectionSettings settings, string? password)
     {
@@ -59,6 +61,8 @@ public sealed class RdpSessionHost : IDisposable
 
         widthPx -= widthPx % 2;
         heightPx -= heightPx % 2;
+        _lastW = widthPx;
+        _lastH = heightPx;
 
         if (!_started)
         {
@@ -73,6 +77,24 @@ public sealed class RdpSessionHost : IDisposable
             _resizeDebounce.Stop();
             _resizeDebounce.Start();
         }
+    }
+
+    /// <summary>Tear down the dropped ActiveX control and dial the host again at the last known size.</summary>
+    public void Reconnect()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _resizeDebounce.Stop();
+        TeardownClient();
+        _started = false;
+        _connected = false;
+
+        var w = _lastW >= MinAxis ? _lastW : Clamp(_settings.Width);
+        var h = _lastH >= MinAxis ? _lastH : Clamp(_settings.Height);
+        Start(w, h);
     }
 
     private void Start(int widthPx, int heightPx)
@@ -167,20 +189,13 @@ public sealed class RdpSessionHost : IDisposable
 
     private static int Clamp(int value) => Math.Clamp(value, MinAxis, MaxAxis);
 
-    public void Dispose()
+    private void TeardownClient()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-        _resizeDebounce.Stop();
-
         if (_rdp is not null)
         {
             try
             {
+                _rdp.OnDisconnected -= OnRdpDisconnected;
                 if (_rdp.Connected != 0)
                 {
                     _rdp.Disconnect();
@@ -198,5 +213,17 @@ public sealed class RdpSessionHost : IDisposable
         try { View.Child = null; } catch { /* ignore */ }
         _panel?.Dispose();
         _panel = null;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _resizeDebounce.Stop();
+        TeardownClient();
     }
 }

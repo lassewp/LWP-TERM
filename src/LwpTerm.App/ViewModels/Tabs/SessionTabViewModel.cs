@@ -1,5 +1,6 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace LwpTerm.App.ViewModels.Tabs;
 
@@ -37,6 +38,29 @@ public abstract partial class SessionTabViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     private string _statusText = string.Empty;
+
+    partial void OnStateChanged(SessionTabState value) => OnPropertyChanged(nameof(IsDisconnected));
+
+    /// <summary>True once the session has dropped or failed — drives the reconnect overlay.</summary>
+    public bool IsDisconnected => State is SessionTabState.Disconnected or SessionTabState.Faulted;
+
+    /// <summary>
+    /// Whether the reconnect overlay offers a "Reconnect" button. Session tabs
+    /// that can re-establish their transport (terminals, RDP, VNC) set this true.
+    /// </summary>
+    public virtual bool CanReconnect => false;
+
+    /// <summary>Overlay "Reconnect" — subclasses re-establish the transport.</summary>
+    [RelayCommand]
+    private void Reconnect() => OnReconnectRequested();
+
+    /// <summary>Overlay "Quit" — closes and disposes the tab.</summary>
+    [RelayCommand]
+    private void QuitSession() => RequestClose();
+
+    protected virtual void OnReconnectRequested()
+    {
+    }
 
     /// <summary>Stable id used by AvalonDock for layout serialisation.</summary>
     public string ContentId

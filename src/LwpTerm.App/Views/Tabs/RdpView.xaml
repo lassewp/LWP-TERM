@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:tabsvm="clr-namespace:LwpTerm.App.ViewModels.Tabs"
+             xmlns:tabs="clr-namespace:LwpTerm.App.Views.Tabs"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
@@ -10,26 +11,25 @@
     <Grid>
         <ContentPresenter x:Name="Slot" />
 
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <StackPanel.Style>
-                <Style TargetType="StackPanel">
+        <TextBlock Text="{Binding StatusText}" Foreground="#C0C0C0"
+                   HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding State}" Value="Connecting">
                             <Setter Property="Visibility" Value="Visible" />
                         </DataTrigger>
-                        <DataTrigger Binding="{Binding State}" Value="Disconnected">
-                            <Setter Property="Visibility" Value="Visible" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding State}" Value="Faulted">
-                            <Setter Property="Visibility" Value="Visible" />
-                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </StackPanel.Style>
-            <TextBlock Text="{Binding StatusText}" Foreground="#C0C0C0" HorizontalAlignment="Center" />
-            <Button Content="Open in mstsc.exe instead" Margin="0,12,0,0" Padding="10,4"
-                    Command="{Binding OpenInMstscCommand}" />
-        </StackPanel>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <tabs:SessionDisconnectedOverlay>
+            <tabs:SessionDisconnectedOverlay.ExtraContent>
+                <Button Content="Open in mstsc.exe instead" Padding="10,4"
+                        Command="{Binding OpenInMstscCommand}" />
+            </tabs:SessionDisconnectedOverlay.ExtraContent>
+        </tabs:SessionDisconnectedOverlay>
     </Grid>
 </UserControl>

@@ -54,6 +54,19 @@ public sealed class VncSessionHost : IDisposable
         _vnc.Connect(s.Host, s.ViewOnly, scaled: true);
     }
 
+    /// <summary>Drop the lost client and dial the host again.</summary>
+    public void Reconnect()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        TeardownClient();
+        _started = false;
+        EnsureStarted();
+    }
+
     public void SendCtrlAltDel()
     {
         try
@@ -66,15 +79,8 @@ public sealed class VncSessionHost : IDisposable
         }
     }
 
-    public void Dispose()
+    private void TeardownClient()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-
         if (_vnc is not null)
         {
             try
@@ -94,5 +100,16 @@ public sealed class VncSessionHost : IDisposable
         }
 
         try { View.Child = null; } catch { /* ignore */ }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        TeardownClient();
     }
 }

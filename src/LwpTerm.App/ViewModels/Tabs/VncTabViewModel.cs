@@ -33,6 +33,15 @@ public sealed partial class VncTabViewModel : SessionTabViewModel
 
     public VncSessionHost Host { get; }
 
+    public override bool CanReconnect => true;
+
+    protected override void OnReconnectRequested()
+    {
+        State = SessionTabState.Connecting;
+        StatusText = "Reconnecting…";
+        Host.Reconnect();
+    }
+
     public void NotifyConnecting()
     {
         if (State is SessionTabState.Idle or SessionTabState.Disconnected)

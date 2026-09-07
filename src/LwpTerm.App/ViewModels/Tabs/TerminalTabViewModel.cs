@@ -23,17 +23,20 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
 {
     private static readonly string Esc = char.ConvertFromUtf32(0x1B);
 
-    private readonly ITerminalConnection _connection;
+    private readonly Func<ITerminalConnection> _connectionFactory;
     private readonly ILogger _log;
     private readonly AppPaths _paths;
 
+    private ITerminalConnection _connection;
     private bool _connectRequested;
     private FileStream? _sessionLog;
+    private int _cols = 80;
+    private int _rows = 24;
 
-    public TerminalTabViewModel(string title, ITerminalConnection connection, ILogger log, AppPaths paths, TerminalConfig? config = null)
+    public TerminalTabViewModel(string title, Func<ITerminalConnection> connectionFactory, ILogger log, AppPaths paths, TerminalConfig? config = null)
         : base(title)
     {
-        _connection = connection;
+        _connectionFactory = connectionFactory;
         _log = log;
         _paths = paths;
         ToolTip = title;
@@ -46,11 +49,25 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         Host.Resized += OnTerminalResize;
         Host.Bell += () => { try { System.Media.SystemSounds.Beep.Play(); } catch { /* ignore */ } };
 
+        _connection = _connectionFactory();
+        WireConnection();
+    }
+
+    public TerminalSessionHost Host { get; }
+
+    public override bool CanReconnect => true;
+
+    private void WireConnection()
+    {
         _connection.DataReceived += OnConnectionData;
         _connection.Closed += OnConnectionClosed;
     }
 
-    public TerminalSessionHost Host { get; }
+    private void UnwireConnection()
+    {
+        _connection.DataReceived -= OnConnectionData;
+        _connection.Closed -= OnConnectionClosed;
+    }
 
     public bool IsLogging => _sessionLog is not null;
 
@@ -62,6 +79,9 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
 
     private async void OnTerminalReady(int columns, int rows)
     {
+        _cols = columns;
+        _rows = rows;
+
         if (_connectRequested)
         {
             // Page reloaded (e.g. re-parent recovery): the buffer already replayed;
@@ -70,6 +90,11 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
             return;
         }
 
+        await StartSessionAsync(columns, rows).ConfigureAwait(true);
+    }
+
+    private async System.Threading.Tasks.Task StartSessionAsync(int columns, int rows)
+    {
         _connectRequested = true;
         State = SessionTabState.Connecting;
         StatusText = "Connecting…";
@@ -101,7 +126,12 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         }
     }
 
-    private async void OnTerminalResize(int columns, int rows) => await SafeResize(columns, rows).ConfigureAwait(true);
+    private async void OnTerminalResize(int columns, int rows)
+    {
+        _cols = columns;
+        _rows = rows;
+        await SafeResize(columns, rows).ConfigureAwait(true);
+    }
 
     private async System.Threading.Tasks.Task SafeResize(int columns, int rows)
     {
@@ -172,8 +202,22 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
         Host.SendNotice(Dim($"[logging to {path}]"));
     }
 
-    [RelayCommand]
-    private void Reconnect() => Host.SendNotice(Dim("[reconnect is available from M3]"));
+    protected override void OnReconnectRequested()
+    {
+        if (State is SessionTabState.Connecting or SessionTabState.Connected)
+        {
+            return;
+        }
+
+        var old = _connection;
+        UnwireConnection();
+        _connection = _connectionFactory();
+        WireConnection();
+        _ = old.DisposeAsync();
+
+        Host.SendNotice(Dim("[reconnecting…]"));
+        _ = StartSessionAsync(_cols, _rows);
+    }
 
     private static void Dispatch(Action action)
     {
@@ -190,8 +234,7 @@ public sealed partial class TerminalTabViewModel : SessionTabViewModel
 
     protected override void DisposeCore()
     {
-        _connection.DataReceived -= OnConnectionData;
-        _connection.Closed -= OnConnectionClosed;
+        UnwireConnection();
 
         _sessionLog?.Dispose();
         _sessionLog = null;

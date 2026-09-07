@@ -39,6 +39,15 @@ public sealed partial class RdpTabViewModel : SessionTabViewModel
 
     public RdpSessionHost Host { get; }
 
+    public override bool CanReconnect => true;
+
+    protected override void OnReconnectRequested()
+    {
+        State = SessionTabState.Connecting;
+        StatusText = "Reconnecting…";
+        Host.Reconnect();
+    }
+
     /// <summary>Called by the view when the surface starts connecting.</summary>
     public void NotifyConnecting()
     {

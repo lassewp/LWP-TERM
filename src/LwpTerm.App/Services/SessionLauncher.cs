@@ -72,9 +72,9 @@ public sealed class SessionLauncher : ISessionLauncher
 
         if (_terminals.Supports(item.Protocol))
         {
-            var connection = _terminals.Create(item.Settings);
+            var settings = item.Settings;
             var logger = _loggerFactory.CreateLogger($"Terminal.{item.Protocol}");
-            Open(new TerminalTabViewModel(item.Name, connection, logger, _paths, CurrentTerminalConfig()));
+            Open(new TerminalTabViewModel(item.Name, () => _terminals.Create(settings), logger, _paths, CurrentTerminalConfig()));
             return;
         }
 
@@ -103,9 +103,8 @@ public sealed class SessionLauncher : ISessionLauncher
     {
         var kind = _settings.Current.DefaultShell;
         var settings = new LocalShellConnectionSettings { ShellKind = kind };
-        var connection = _terminals.Create(settings);
         var logger = _loggerFactory.CreateLogger("Terminal.LocalShell");
-        Open(new TerminalTabViewModel(kind.ToString(), connection, logger, _paths, CurrentTerminalConfig()));
+        Open(new TerminalTabViewModel(kind.ToString(), () => _terminals.Create(settings), logger, _paths, CurrentTerminalConfig()));
     }
 
     public void OpenSftpForSsh(SessionItem sshItem)
