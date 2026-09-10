@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -17,6 +17,7 @@ using LwpTerm.App.ViewModels.Tabs;
 using LwpTerm.App.Views.Dialogs;
 using LwpTerm.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
+using WinFormsScreen = System.Windows.Forms.Screen;
 
 namespace LwpTerm.App;
 
@@ -44,27 +45,15 @@ public partial class MainWindow : Window
         Dock.DocumentClosed += OnDocumentClosed;
         Loaded += OnLoaded;
         Closing += OnClosing;
-
-        Activated += (_, _) => { if (_fsMode == FullscreenMode.Borderless) Topmost = true; };
-        Deactivated += (_, _) => { if (_fsMode == FullscreenMode.Borderless) Topmost = false; };
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
-        // Works when a WPF element has focus. When an RDP / VNC / terminal child
-        // HWND has focus the low-level keyboard hook (installed while full screen)
-        // is what catches F11 / Esc instead.
+        // Entry point when a WPF element in the main window has focus. Once a
+        // session is full screen it lives in its own window with its own hook.
         if (e.Key == Key.F11)
         {
-            var mode = (Keyboard.Modifiers & ModifierKeys.Shift) != 0
-                ? FullscreenMode.Borderless
-                : FullscreenMode.FullScreen;
-            ToggleFullscreen(mode);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Escape && _fsMode != FullscreenMode.None)
-        {
-            ExitFullscreen();
+            ToggleFullscreen(ShiftHeld());
             e.Handled = true;
         }
 
@@ -221,39 +210,24 @@ public partial class MainWindow : Window
         MenuLayouts.Items.Add(delete);
     }
 
-    // ---- Full screen ---------------------------------------------------
+    // ---- Full screen (session in its own window) -----------------------
 
     private enum FullscreenMode
     {
         None,
 
-        /// <summary>Borderless, fills the monitor work area — the taskbar stays reachable.</summary>
+        /// <summary>Fills the monitor work area — the taskbar stays reachable.</summary>
         FullScreen,
 
-        /// <summary>Borderless, covers the whole monitor including the taskbar; top-most while focused.</summary>
+        /// <summary>Covers the whole monitor, taskbar included; top-most while focused.</summary>
         Borderless,
     }
 
     private FullscreenMode _fsMode = FullscreenMode.None;
-    private FullscreenBar? _fsBar;
-    private WindowStyle _fsSavedStyle;
-    private ResizeMode _fsSavedResize;
-    private WindowState _fsSavedState;
-    private bool _fsSavedTopmost;
-    private Rect _fsSavedBounds;
-    private Visibility _fsSavedToolbar;
-    private Visibility _fsSavedStatus;
-    private bool _fsSavedDocHeader;
-    private LayoutDocumentPane? _fsDocPane;
-    private readonly List<LayoutAnchorable> _fsHiddenPanes = new();
+    private SessionFullscreenWindow? _fsWindow;
+    private SessionTabViewModel? _fsSession;
 
-    private void OnMenuFullScreen(object sender, RoutedEventArgs e)
-    {
-        var mode = (Keyboard.Modifiers & ModifierKeys.Shift) != 0
-            ? FullscreenMode.Borderless
-            : FullscreenMode.FullScreen;
-        ToggleFullscreen(mode);
-    }
+    private void OnMenuFullScreen(object sender, RoutedEventArgs e) => ToggleFullscreen(ShiftHeld());
 
     private void OnMenuBorderless(object sender, RoutedEventArgs e) => ToggleFullscreen(FullscreenMode.Borderless);
 
@@ -273,10 +247,7 @@ public partial class MainWindow : Window
             _viewModel.ActiveDocument = vm;
         }
 
-        var mode = (Keyboard.Modifiers & ModifierKeys.Shift) != 0
-            ? FullscreenMode.Borderless
-            : FullscreenMode.FullScreen;
-        ToggleFullscreen(mode);
+        ToggleFullscreen(ShiftHeld());
     }
 
     private void OnDocumentHeaderMouseDown(object sender, MouseButtonEventArgs e)
@@ -288,9 +259,12 @@ public partial class MainWindow : Window
         }
     }
 
+    private static FullscreenMode ShiftHeld() =>
+        (Keyboard.Modifiers & ModifierKeys.Shift) != 0 ? FullscreenMode.Borderless : FullscreenMode.FullScreen;
+
     private void ToggleFullscreen(FullscreenMode mode)
     {
-        if (_fsMode == mode)
+        if (_fsWindow is not null)
         {
             ExitFullscreen();
         }
@@ -302,283 +276,90 @@ public partial class MainWindow : Window
 
     private void EnterFullscreen(FullscreenMode mode)
     {
-        if (_viewModel.ActiveDocument is null)
+        if (_fsWindow is not null || _viewModel.ActiveDocument is not { } session)
         {
             return;
         }
 
-        var switching = _fsMode != FullscreenMode.None;
+        var screen = PickFullscreenScreen();
+        var area = mode == FullscreenMode.Borderless ? screen.Bounds : screen.WorkingArea;
+        var px = (area.Left, area.Top, area.Right, area.Bottom);
+        var dip = ToDip(area.Left, area.Top, area.Right, area.Bottom);
 
-        // Resolve the target monitor before un-maximizing (that would move the window).
-        if (!TryGetMonitorInfo(out var mi))
-        {
-            return;
-        }
-
-        var px = mode == FullscreenMode.FullScreen ? mi.rcWork : mi.rcMonitor;
-        var dip = ToDip(px);
-
-        if (!switching)
-        {
-            _fsSavedStyle = WindowStyle;
-            _fsSavedResize = ResizeMode;
-            _fsSavedState = WindowState;
-            _fsSavedTopmost = Topmost;
-            _fsSavedBounds = new Rect(Left, Top, Width, Height);
-            _fsSavedToolbar = ToolbarBar.Visibility;
-            _fsSavedStatus = StatusBar.Visibility;
-            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        }
-
+        _fsSession = session;
         _fsMode = mode;
 
-        if (WindowState == WindowState.Maximized)
+        var window = new SessionFullscreenWindow(session, mode == FullscreenMode.Borderless, dip, px)
         {
-            WindowState = WindowState.Normal;
-        }
+            Owner = this,
+        };
+        window.ModeToggleRequested += SwitchFullscreenMode;
+        window.Closed += (_, _) => OnFullscreenWindowClosed();
+        _fsWindow = window;
 
-        WindowStyle = WindowStyle.None;
-        ResizeMode = ResizeMode.NoResize;
-        Topmost = mode == FullscreenMode.Borderless;
+        _viewModel.Documents.CollectionChanged += OnFullscreenDocumentsChanged;
 
-        Left = dip.Left;
-        Top = dip.Top;
-        Width = dip.Width;
-        Height = dip.Height;
-
-        // Hide the chrome *in place* — the session surface never moves, so its
-        // child HWND (RDP / VNC / WebView2) is never dropped or re-parented.
-        // The panes are looked up in the *live* layout: a restored layout.xml
-        // replaces the objects the x:Name fields point at.
-        ToolbarBar.Visibility = Visibility.Collapsed;
-        StatusBar.Visibility = Visibility.Collapsed;
-
-        if (!switching)
-        {
-            foreach (var pane in LivePanes("sessions", "transfers", "log").Where(p => p.IsVisible).ToList())
-            {
-                pane.Hide();
-                _fsHiddenPanes.Add(pane);
-            }
-
-            _fsDocPane = Dock.Layout.Descendents().OfType<LayoutDocumentPane>().FirstOrDefault();
-            if (_fsDocPane is not null)
-            {
-                _fsSavedDocHeader = _fsDocPane.ShowHeader;
-                _fsDocPane.ShowHeader = false;
-            }
-        }
-
-        InstallKeyboardHook();
-
-        _fsBar ??= CreateFullscreenBar();
-        _fsBar.Begin(BarTitle(), dip, (px.left, px.top, px.right, px.bottom), ModeActionLabel(mode));
+        window.Show();
+        window.Activate();
     }
 
-    private void ExitFullscreen()
-    {
-        if (_fsMode == FullscreenMode.None)
-        {
-            return;
-        }
+    private void ExitFullscreen() => _fsWindow?.Close(); // -> OnFullscreenWindowClosed
 
+    private void OnFullscreenWindowClosed()
+    {
+        _viewModel.Documents.CollectionChanged -= OnFullscreenDocumentsChanged;
+
+        var session = _fsSession;
+        _fsWindow = null;
+        _fsSession = null;
         _fsMode = FullscreenMode.None;
-        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        RemoveKeyboardHook();
-        _fsBar?.End();
 
-        ToolbarBar.Visibility = _fsSavedToolbar;
-        StatusBar.Visibility = _fsSavedStatus;
-
-        if (_fsDocPane is not null)
-        {
-            _fsDocPane.ShowHeader = _fsSavedDocHeader;
-            _fsDocPane = null;
-        }
-
-        foreach (var pane in _fsHiddenPanes)
-        {
-            pane.Show();
-        }
-
-        _fsHiddenPanes.Clear();
-
-        Topmost = _fsSavedTopmost;
-        WindowStyle = _fsSavedStyle;
-        ResizeMode = _fsSavedResize;
-        Left = _fsSavedBounds.Left;
-        Top = _fsSavedBounds.Top;
-        Width = _fsSavedBounds.Width;
-        Height = _fsSavedBounds.Height;
-        WindowState = _fsSavedState;
+        // The docked tab view kept running behind the scenes; hand its surface back.
+        session?.ReclaimSurface();
     }
 
-    private FullscreenBar CreateFullscreenBar()
+    private void OnFullscreenDocumentsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        var bar = new FullscreenBar(this);
-        bar.ExitRequested += ExitFullscreen;
-        bar.MinimiseRequested += () => WindowState = WindowState.Minimized;
-        bar.ToggleModeRequested += () => EnterFullscreen(
-            _fsMode == FullscreenMode.Borderless ? FullscreenMode.FullScreen : FullscreenMode.Borderless);
-        return bar;
-    }
-
-    private static string ModeActionLabel(FullscreenMode mode) =>
-        mode == FullscreenMode.Borderless ? "Windowed full screen" : "Borderless full screen";
-
-    private string BarTitle()
-    {
-        var doc = _viewModel.ActiveDocument;
-        if (doc is null)
+        if (_fsSession is not null && !_viewModel.Documents.Contains(_fsSession))
         {
-            return "LWP-TERM";
+            _fsWindow?.Close();
         }
-
-        return string.IsNullOrWhiteSpace(doc.ToolTip) ? doc.Title : $"{doc.Title}  —  {doc.ToolTip}";
     }
 
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void SwitchFullscreenMode(bool borderless)
     {
-        if (e.PropertyName != nameof(MainWindowViewModel.ActiveDocument) || _fsMode == FullscreenMode.None)
+        var session = _fsSession;
+        var target = borderless ? FullscreenMode.Borderless : FullscreenMode.FullScreen;
+        if (session is null || target == _fsMode)
         {
             return;
         }
 
-        if (_viewModel.ActiveDocument is null)
-        {
-            ExitFullscreen();
-        }
-        else
-        {
-            _fsBar?.SetTitle(BarTitle());
-        }
+        ExitFullscreen();
+        _viewModel.ActiveDocument = session;
+        EnterFullscreen(target);
     }
 
-    // ---- monitor geometry --------------------------------------------------
-
-    private bool TryGetMonitorInfo(out MONITORINFO info)
+    /// <summary>Prefer a monitor the main window is <em>not</em> on, so both stay visible.</summary>
+    private WinFormsScreen PickFullscreenScreen()
     {
-        var hwnd = new WindowInteropHelper(this).EnsureHandle();
-        var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
-        return GetMonitorInfo(monitor, ref info);
+        var mine = WinFormsScreen.FromHandle(new WindowInteropHelper(this).Handle);
+        foreach (var screen in WinFormsScreen.AllScreens)
+        {
+            if (!screen.Bounds.Equals(mine.Bounds))
+            {
+                return screen;
+            }
+        }
+
+        return mine;
     }
 
-    private Rect ToDip(RECT r)
+    private Rect ToDip(double left, double top, double right, double bottom)
     {
         var transform = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
-        var topLeft = transform.Transform(new Point(r.left, r.top));
-        var bottomRight = transform.Transform(new Point(r.right, r.bottom));
+        var topLeft = transform.Transform(new Point(left, top));
+        var bottomRight = transform.Transform(new Point(right, bottom));
         return new Rect(topLeft, bottomRight);
-    }
-
-    // ---- low-level keyboard hook (F11 / Esc while a child HWND has focus) --
-
-    private IntPtr _kbHook = IntPtr.Zero;
-    private LowLevelKeyboardProc? _kbHookProc;
-
-    private void InstallKeyboardHook()
-    {
-        if (_kbHook != IntPtr.Zero)
-        {
-            return;
-        }
-
-        _kbHookProc = KeyboardHookCallback;
-        _kbHook = SetWindowsHookEx(WH_KEYBOARD_LL, _kbHookProc, GetModuleHandle(null), 0);
-    }
-
-    private void RemoveKeyboardHook()
-    {
-        if (_kbHook == IntPtr.Zero)
-        {
-            return;
-        }
-
-        UnhookWindowsHookEx(_kbHook);
-        _kbHook = IntPtr.Zero;
-        _kbHookProc = null;
-    }
-
-    private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-    {
-        if (nCode >= 0 && _fsMode != FullscreenMode.None &&
-            ((int)wParam == WM_KEYDOWN || (int)wParam == WM_SYSKEYDOWN))
-        {
-            var vk = Marshal.ReadInt32(lParam); // KBDLLHOOKSTRUCT.vkCode
-
-            if (vk is VK_F11 or VK_ESCAPE)
-            {
-                var toBorderless = vk == VK_F11 && (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    if (toBorderless)
-                    {
-                        ToggleFullscreen(FullscreenMode.Borderless);
-                    }
-                    else
-                    {
-                        ExitFullscreen();
-                    }
-                }));
-
-                return (IntPtr)1; // swallow so it never reaches the remote session
-            }
-        }
-
-        return CallNextHookEx(_kbHook, nCode, wParam, lParam);
-    }
-
-    // ---- native ----------------------------------------------------------
-
-    private const int MONITOR_DEFAULTTONEAREST = 2;
-    private const int WH_KEYBOARD_LL = 13;
-    private const int WM_KEYDOWN = 0x0100;
-    private const int WM_SYSKEYDOWN = 0x0104;
-    private const int VK_SHIFT = 0x10;
-    private const int VK_ESCAPE = 0x1B;
-    private const int VK_F11 = 0x7A;
-
-    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, int flags);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
-
-    [DllImport("user32.dll")]
-    private static extern short GetKeyState(int nVirtKey);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-    private static extern IntPtr GetModuleHandle(string? lpModuleName);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT
-    {
-        public int left;
-        public int top;
-        public int right;
-        public int bottom;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MONITORINFO
-    {
-        public int cbSize;
-        public RECT rcMonitor;
-        public RECT rcWork;
-        public int dwFlags;
     }
 }

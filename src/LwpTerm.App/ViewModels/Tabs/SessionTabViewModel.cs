@@ -78,6 +78,16 @@ public abstract partial class SessionTabViewModel : ObservableObject, IDisposabl
 
     public void RequestClose() => CloseRequested?.Invoke(this, EventArgs.Empty);
 
+    /// <summary>
+    /// Raised when the live surface (RDP / VNC / terminal HWND) should be pulled
+    /// back into the docked tab view — e.g. after a full-screen window that
+    /// borrowed it has closed. The docked view never unloaded, so it needs a
+    /// nudge to re-attach.
+    /// </summary>
+    public event EventHandler? SurfaceReclaimRequested;
+
+    public void ReclaimSurface() => SurfaceReclaimRequested?.Invoke(this, EventArgs.Empty);
+
     public void Dispose()
     {
         if (_disposed)

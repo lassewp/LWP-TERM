@@ -13,7 +13,7 @@
     <SelfContained>false</SelfContained>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
     <!-- Custom entry point (Program.Main) so Velopack hooks run before WPF. -->
     <StartupObject>LwpTerm.App.Program</StartupObject>
     <!-- This is a WPF app; per-monitor DPI v2 is declared in app.manifest (which WPF honours).
