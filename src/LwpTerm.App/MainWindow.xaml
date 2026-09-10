@@ -20,77 +20,93 @@
         <KeyBinding Key="T" Modifiers="Control" Command="{Binding NewLocalShellCommand}" />
     </Window.InputBindings>
 
-    <DockPanel>
-        <!-- Toolbar -->
-        <Border DockPanel.Dock="Top" Background="{StaticResource Brush.Panel}"
-                BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1">
-            <DockPanel Margin="4">
-                <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}" Command="{Binding NewLocalShellCommand}"
-                        ToolTip="New local shell (Ctrl+T)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE756;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
-                        <TextBlock Text="New shell" />
-                    </StackPanel>
-                </Button>
-                <Separator DockPanel.Dock="Left" />
-                <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}"
-                        Command="{Binding Sessions.ConnectCommand}" ToolTip="Connect selected session">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE71B;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
-                        <TextBlock Text="Connect" />
-                    </StackPanel>
-                </Button>
+    <Grid x:Name="RootGrid">
+        <DockPanel x:Name="ChromeRoot">
+            <!-- Toolbar -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource Brush.Panel}"
+                    BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1">
+                <DockPanel Margin="4">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}" Command="{Binding NewLocalShellCommand}"
+                            ToolTip="New local shell (Ctrl+T)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE756;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
+                            <TextBlock Text="New shell" />
+                        </StackPanel>
+                    </Button>
+                    <Separator DockPanel.Dock="Left" />
+                    <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}"
+                            Command="{Binding Sessions.ConnectCommand}" ToolTip="Connect selected session">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE71B;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
+                            <TextBlock Text="Connect" />
+                        </StackPanel>
+                    </Button>
 
-                <Button x:Name="ViewMenuButton" DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
-                        Click="OnViewMenu" ToolTip="Settings &amp; layout">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE713;" Style="{StaticResource IconText}" />
-                        <TextBlock Text="&#xE70D;" Style="{StaticResource IconText}" FontSize="9" Margin="4,1,0,0" />
-                    </StackPanel>
-                    <Button.ContextMenu>
-                        <ContextMenu x:Name="ViewMenu">
-                            <MenuItem x:Name="MenuVersion" Header="LWP-TERM" IsEnabled="False" />
-                            <MenuItem Header="Check for updates…" Click="OnCheckUpdates" />
-                            <Separator />
-                            <MenuItem Header="Settings…" Click="OnMenuSettings" />
-                            <MenuItem Header="Import PuTTY sessions…" Click="OnImportPutty" />
-                            <Separator />
-                            <MenuItem x:Name="MenuPaneSessions" Header="Sessions panel" IsCheckable="True"
-                                      Click="OnTogglePane" Tag="Sessions" />
-                            <MenuItem x:Name="MenuPaneTransfers" Header="Transfers panel" IsCheckable="True"
-                                      Click="OnTogglePane" Tag="Transfers" />
-                            <MenuItem x:Name="MenuPaneLog" Header="Log panel" IsCheckable="True"
-                                      Click="OnTogglePane" Tag="Log" />
-                            <Separator />
-                            <MenuItem Header="Reset layout" Click="OnResetLayout" />
-                            <MenuItem Header="Save layout as…" Click="OnSaveLayoutAs" />
-                            <MenuItem x:Name="MenuLayouts" Header="Saved layouts" />
-                        </ContextMenu>
-                    </Button.ContextMenu>
-                </Button>
-                <Grid Margin="16,0,8,0">
-                    <TextBox Text="{Binding QuickConnectText, UpdateSourceTrigger=PropertyChanged}"
-                             Background="{StaticResource Brush.Panel}" Foreground="{StaticResource Brush.Text}"
-                             BorderBrush="{StaticResource Brush.Border}" Padding="4,3"
-                             ToolTip="Quick connect: ssh://user@host:port, telnet://host, rdp://host, …">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Return" Command="{Binding QuickConnectCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-                    <TextBlock Text="Quick connect (Enter)…  e.g. user@host  or  rdp://10.0.0.5"
-                               Margin="6,0,0,0" Foreground="{StaticResource Brush.TextDim}"
-                               IsHitTestVisible="False" VerticalAlignment="Center">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding QuickConnectText}" Value="">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                    <Separator DockPanel.Dock="Left" />
+                    <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}"
+                            Click="OnMenuFullScreen"
+                            ToolTip="Full screen (F11) — hold Shift for borderless">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE1D9;" Style="{StaticResource IconText}" Margin="0,0,6,0" />
+                            <TextBlock Text="Full screen" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="ViewMenuButton" DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}"
+                            Click="OnViewMenu" ToolTip="Settings &amp; layout">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" Style="{StaticResource IconText}" />
+                            <TextBlock Text="&#xE70D;" Style="{StaticResource IconText}" FontSize="9" Margin="4,1,0,0" />
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="ViewMenu">
+                                <MenuItem x:Name="MenuVersion" Header="LWP-TERM" IsEnabled="False" />
+                                <MenuItem Header="Check for updates…" Click="OnCheckUpdates" />
+                                <Separator />
+                                <MenuItem Header="Settings…" Click="OnMenuSettings" />
+                                <MenuItem Header="Import PuTTY sessions…" Click="OnImportPutty" />
+                                <Separator />
+                                <MenuItem x:Name="MenuFullScreen" Header="Full screen" IsCheckable="True"
+                                          InputGestureText="F11" Click="OnMenuFullScreen" />
+                                <MenuItem x:Name="MenuBorderless" Header="Borderless full screen" IsCheckable="True"
+                                          InputGestureText="Shift+F11" Click="OnMenuBorderless" />
+                                <Separator />
+                                <MenuItem x:Name="MenuPaneSessions" Header="Sessions panel" IsCheckable="True"
+                                          Click="OnTogglePane" Tag="Sessions" />
+                                <MenuItem x:Name="MenuPaneTransfers" Header="Transfers panel" IsCheckable="True"
+                                          Click="OnTogglePane" Tag="Transfers" />
+                                <MenuItem x:Name="MenuPaneLog" Header="Log panel" IsCheckable="True"
+                                          Click="OnTogglePane" Tag="Log" />
+                                <Separator />
+                                <MenuItem Header="Reset layout" Click="OnResetLayout" />
+                                <MenuItem Header="Save layout as…" Click="OnSaveLayoutAs" />
+                                <MenuItem x:Name="MenuLayouts" Header="Saved layouts" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Grid Margin="16,0,8,0">
+                        <TextBox Text="{Binding QuickConnectText, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="{StaticResource Brush.Panel}" Foreground="{StaticResource Brush.Text}"
+                                 BorderBrush="{StaticResource Brush.Border}" Padding="4,3"
+                                 ToolTip="Quick connect: ssh://user@host:port, telnet://host, rdp://host, …">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Return" Command="{Binding QuickConnectCommand}" />
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <TextBlock Text="Quick connect (Enter)…  e.g. user@host  or  rdp://10.0.0.5"
+                                   Margin="6,0,0,0" Foreground="{StaticResource Brush.TextDim}"
+                                   IsHitTestVisible="False" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding QuickConnectText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                 </Grid>
             </DockPanel>
         </Border>
@@ -118,7 +134,9 @@
                                    Background="{StaticResource Brush.Bg}">
             <avalonDock:DockingManager.DocumentHeaderTemplate>
                 <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Background="Transparent"
+                                MouseDown="OnDocumentHeaderMouseDown"
+                                ToolTip="Double-click for full screen (F11)">
                         <TextBlock Text="{Binding Content.Title}" VerticalAlignment="Center" />
                     </StackPanel>
                 </DataTemplate>
@@ -155,5 +173,14 @@
                 </avalonDock:LayoutPanel>
             </avalonDock:LayoutRoot>
         </avalonDock:DockingManager>
-    </DockPanel>
+        </DockPanel>
+
+        <!-- Full-screen surface: the active session, and nothing else, fills the
+             window. The session's live host re-parents itself here exactly as it
+             does when a tab is docked or floated. -->
+        <ContentControl x:Name="FullscreenHost"
+                        Background="{StaticResource Brush.Bg}"
+                        Visibility="Collapsed"
+                        Focusable="False" />
+    </Grid>
 </Window>
