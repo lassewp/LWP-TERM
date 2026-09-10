@@ -26,13 +26,10 @@ public partial class RdpView : UserControl
             return;
         }
 
-        // Re-attach the (persistent) surface to this view instance.
-        if (!ReferenceEquals(Slot.Content, _vm.Host.View))
-        {
-            DetachHostFromPreviousParent(_vm);
-            Slot.Content = _vm.Host.View;
-        }
+        _vm.SurfaceReclaimRequested -= OnSurfaceReclaimRequested;
+        _vm.SurfaceReclaimRequested += OnSurfaceReclaimRequested;
 
+        AttachSurface();
         _vm.NotifyConnecting();
         Push();
     }
@@ -41,12 +38,44 @@ public partial class RdpView : UserControl
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        if (_vm is not null)
+        {
+            _vm.SurfaceReclaimRequested -= OnSurfaceReclaimRequested;
+        }
+
         // Detach only — the session lives on in the view model so docking /
-        // floating the tab does not drop it. Real teardown is in VM.Dispose().
+        // floating / full-screen does not drop it. Real teardown is in VM.Dispose().
         if (ReferenceEquals(Slot.Content, _vm?.Host.View))
         {
             Slot.Content = null;
         }
+    }
+
+    /// <summary>A full-screen window that borrowed the surface has closed; take it back.</summary>
+    private void OnSurfaceReclaimRequested(object? sender, EventArgs e)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        AttachSurface();
+        Push();
+    }
+
+    private void AttachSurface()
+    {
+        if (_vm is null || ReferenceEquals(Slot.Content, _vm.Host.View))
+        {
+            return;
+        }
+
+        if (_vm.Host.View.Parent is ContentPresenter previous)
+        {
+            previous.Content = null;
+        }
+
+        Slot.Content = _vm.Host.View;
     }
 
     private void Push()
@@ -60,13 +89,5 @@ public partial class RdpView : UserControl
         var w = (int)Math.Round(ActualWidth * dpi.DpiScaleX);
         var h = (int)Math.Round(ActualHeight * dpi.DpiScaleY);
         _vm.Host.EnsureStartedOrResized(w, h);
-    }
-
-    private static void DetachHostFromPreviousParent(RdpTabViewModel vm)
-    {
-        if (vm.Host.View.Parent is ContentPresenter previous)
-        {
-            previous.Content = null;
-        }
     }
 }

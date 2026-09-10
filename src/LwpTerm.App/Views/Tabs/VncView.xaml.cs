@@ -24,26 +24,48 @@ public partial class VncView : UserControl
             return;
         }
 
-        if (!ReferenceEquals(Slot.Content, _vm.Host.View))
-        {
-            if (_vm.Host.View.Parent is ContentPresenter previous)
-            {
-                previous.Content = null;
-            }
+        _vm.SurfaceReclaimRequested -= OnSurfaceReclaimRequested;
+        _vm.SurfaceReclaimRequested += OnSurfaceReclaimRequested;
 
-            Slot.Content = _vm.Host.View;
-        }
-
+        AttachSurface();
         _vm.NotifyConnecting();
         _vm.Host.EnsureStarted();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
-        // Detach only; the session lives in the view model across dock / float.
+        if (_vm is not null)
+        {
+            _vm.SurfaceReclaimRequested -= OnSurfaceReclaimRequested;
+        }
+
+        // Detach only; the session lives in the view model across dock / float / full-screen.
         if (ReferenceEquals(Slot.Content, _vm?.Host.View))
         {
             Slot.Content = null;
         }
+    }
+
+    private void OnSurfaceReclaimRequested(object? sender, EventArgs e)
+    {
+        if (IsLoaded)
+        {
+            AttachSurface();
+        }
+    }
+
+    private void AttachSurface()
+    {
+        if (_vm is null || ReferenceEquals(Slot.Content, _vm.Host.View))
+        {
+            return;
+        }
+
+        if (_vm.Host.View.Parent is ContentPresenter previous)
+        {
+            previous.Content = null;
+        }
+
+        Slot.Content = _vm.Host.View;
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using LwpTerm.App.ViewModels.Tabs;
@@ -23,26 +24,48 @@ public partial class TerminalView : UserControl
             return;
         }
 
-        if (!ReferenceEquals(Slot.Content, _vm.Host.View))
-        {
-            if (_vm.Host.View.Parent is ContentPresenter previous)
-            {
-                previous.Content = null;
-            }
+        _vm.SurfaceReclaimRequested -= OnSurfaceReclaimRequested;
+        _vm.SurfaceReclaimRequested += OnSurfaceReclaimRequested;
 
-            Slot.Content = _vm.Host.View;
-        }
-
+        AttachSurface();
         _vm.Host.EnsureInitialized();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        if (_vm is not null)
+        {
+            _vm.SurfaceReclaimRequested -= OnSurfaceReclaimRequested;
+        }
+
         // Detach only — the surface and session live in the view model across
-        // dock / float. Real teardown happens in VM.Dispose().
+        // dock / float / full-screen. Real teardown happens in VM.Dispose().
         if (ReferenceEquals(Slot.Content, _vm?.Host.View))
         {
             Slot.Content = null;
         }
+    }
+
+    private void OnSurfaceReclaimRequested(object? sender, EventArgs e)
+    {
+        if (IsLoaded)
+        {
+            AttachSurface();
+        }
+    }
+
+    private void AttachSurface()
+    {
+        if (_vm is null || ReferenceEquals(Slot.Content, _vm.Host.View))
+        {
+            return;
+        }
+
+        if (_vm.Host.View.Parent is ContentPresenter previous)
+        {
+            previous.Content = null;
+        }
+
+        Slot.Content = _vm.Host.View;
     }
 }
