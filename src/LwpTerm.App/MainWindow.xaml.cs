@@ -230,6 +230,10 @@ public partial class MainWindow : Window
     private WindowState _fsSavedState;
     private bool _fsSavedTopmost;
     private Rect _fsSavedBounds;
+    private Visibility _fsSavedToolbar;
+    private Visibility _fsSavedStatus;
+    private bool _fsSavedDocHeader;
+    private (bool Sessions, bool Transfers, bool Log) _fsSavedPanes;
 
     private void OnMenuFullScreen(object sender, RoutedEventArgs e)
     {
@@ -241,9 +245,15 @@ public partial class MainWindow : Window
 
     private void OnMenuBorderless(object sender, RoutedEventArgs e) => ToggleFullscreen(FullscreenMode.Borderless);
 
-    /// <summary>The ⛶ affordance on a document tab header.</summary>
+    /// <summary>The ⛶ affordance on a document tab header. Handled on MouseDown
+    /// because AvalonDock captures the mouse for tab drag and eats the MouseUp.</summary>
     private void OnHeaderFullScreen(object sender, MouseButtonEventArgs e)
     {
+        if (e.ChangedButton != MouseButton.Left)
+        {
+            return;
+        }
+
         e.Handled = true;
 
         if ((sender as FrameworkElement)?.DataContext is LayoutContent { Content: SessionTabViewModel vm })
@@ -303,6 +313,10 @@ public partial class MainWindow : Window
             _fsSavedState = WindowState;
             _fsSavedTopmost = Topmost;
             _fsSavedBounds = new Rect(Left, Top, Width, Height);
+            _fsSavedToolbar = ToolbarBar.Visibility;
+            _fsSavedStatus = StatusBar.Visibility;
+            _fsSavedDocHeader = DocPane.ShowHeader;
+            _fsSavedPanes = (SessionsPane.IsVisible, TransfersPane.IsVisible, LogPane.IsVisible);
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
 
@@ -322,9 +336,25 @@ public partial class MainWindow : Window
         Width = dip.Width;
         Height = dip.Height;
 
-        ChromeRoot.Visibility = Visibility.Collapsed;
-        FullscreenHost.Content = _viewModel.ActiveDocument;
-        FullscreenHost.Visibility = Visibility.Visible;
+        // Hide the chrome *in place* — the session surface never moves, so its
+        // child HWND (RDP / VNC / WebView2) is never dropped or re-parented.
+        ToolbarBar.Visibility = Visibility.Collapsed;
+        StatusBar.Visibility = Visibility.Collapsed;
+        DocPane.ShowHeader = false;
+        if (SessionsPane.IsVisible)
+        {
+            SessionsPane.Hide();
+        }
+
+        if (TransfersPane.IsVisible)
+        {
+            TransfersPane.Hide();
+        }
+
+        if (LogPane.IsVisible)
+        {
+            LogPane.Hide();
+        }
 
         InstallKeyboardHook();
 
@@ -344,9 +374,23 @@ public partial class MainWindow : Window
         RemoveKeyboardHook();
         _fsBar?.End();
 
-        FullscreenHost.Visibility = Visibility.Collapsed;
-        FullscreenHost.Content = null;
-        ChromeRoot.Visibility = Visibility.Visible;
+        ToolbarBar.Visibility = _fsSavedToolbar;
+        StatusBar.Visibility = _fsSavedStatus;
+        DocPane.ShowHeader = _fsSavedDocHeader;
+        if (_fsSavedPanes.Sessions)
+        {
+            SessionsPane.Show();
+        }
+
+        if (_fsSavedPanes.Transfers)
+        {
+            TransfersPane.Show();
+        }
+
+        if (_fsSavedPanes.Log)
+        {
+            LogPane.Show();
+        }
 
         Topmost = _fsSavedTopmost;
         WindowStyle = _fsSavedStyle;
@@ -395,9 +439,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            FullscreenHost.Content = _viewModel.ActiveDocument;
-            _fsBar?.Begin(BarTitle(), new Rect(Left, Top, Width, Height),
-                ((int)Left, (int)Top, (int)(Left + Width), (int)(Top + Height)), ModeActionLabel(_fsMode));
+            _fsBar?.SetTitle(BarTitle());
         }
     }
 

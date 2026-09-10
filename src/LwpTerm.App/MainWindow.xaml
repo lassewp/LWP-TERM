@@ -20,10 +20,10 @@
         <KeyBinding Key="T" Modifiers="Control" Command="{Binding NewLocalShellCommand}" />
     </Window.InputBindings>
 
-    <Grid x:Name="RootGrid">
-        <DockPanel x:Name="ChromeRoot">
+    <Grid>
+        <DockPanel>
             <!-- Toolbar -->
-            <Border DockPanel.Dock="Top" Background="{StaticResource Brush.Panel}"
+            <Border x:Name="ToolbarBar" DockPanel.Dock="Top" Background="{StaticResource Brush.Panel}"
                     BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1">
                 <DockPanel Margin="4">
                     <Button DockPanel.Dock="Left" Style="{StaticResource ToolbarButton}" Command="{Binding NewLocalShellCommand}"
@@ -112,7 +112,7 @@
         </Border>
 
         <!-- Status bar -->
-        <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.Panel}"
+        <Border x:Name="StatusBar" DockPanel.Dock="Bottom" Background="{StaticResource Brush.Panel}"
                 BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,1,0,0">
             <Grid Margin="8,3">
                 <Grid.ColumnDefinitions>
@@ -137,20 +137,25 @@
                     <StackPanel Orientation="Horizontal" Background="Transparent"
                                 MouseDown="OnDocumentHeaderMouseDown">
                         <TextBlock Text="{Binding Content.Title}" VerticalAlignment="Center" />
-                        <TextBlock Text="&#xE1D9;" FontSize="12" Margin="10,0,0,0" Cursor="Hand"
-                                   MouseLeftButtonUp="OnHeaderFullScreen"
-                                   ToolTip="Full screen (F11) — Shift for borderless, double-click the tab too">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource IconText}">
-                                    <Setter Property="Opacity" Value="0.55" />
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Opacity" Value="1" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <!-- Handled on MouseDown: AvalonDock captures the mouse for
+                             tab drag and never delivers the matching MouseUp. -->
+                        <Border Background="Transparent" Cursor="Hand" Margin="6,0,0,0" Padding="7,2,3,2"
+                                MouseDown="OnHeaderFullScreen"
+                                ToolTip="Full screen (F11) — hold Shift for borderless; double-clicking the tab works too">
+                            <TextBlock Text="&#xE1D9;" FontSize="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource IconText}">
+                                        <Setter Property="Opacity" Value="0.55" />
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True"
+                                                Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}">
+                                                <Setter Property="Opacity" Value="1" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
                     </StackPanel>
                 </DataTemplate>
             </avalonDock:DockingManager.DocumentHeaderTemplate>
@@ -167,7 +172,7 @@
                     </avalonDock:LayoutAnchorablePane>
 
                     <avalonDock:LayoutPanel Orientation="Vertical">
-                        <avalonDock:LayoutDocumentPane />
+                        <avalonDock:LayoutDocumentPane x:Name="DocPane" />
 
                         <avalonDock:LayoutAnchorablePane DockHeight="190">
                             <avalonDock:LayoutAnchorable x:Name="TransfersPane"
@@ -187,13 +192,5 @@
             </avalonDock:LayoutRoot>
         </avalonDock:DockingManager>
         </DockPanel>
-
-        <!-- Full-screen surface: the active session, and nothing else, fills the
-             window. The session's live host re-parents itself here exactly as it
-             does when a tab is docked or floated. -->
-        <ContentControl x:Name="FullscreenHost"
-                        Background="{StaticResource Brush.Bg}"
-                        Visibility="Collapsed"
-                        Focusable="False" />
     </Grid>
 </Window>

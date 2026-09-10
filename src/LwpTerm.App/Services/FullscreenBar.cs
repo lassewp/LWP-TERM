@@ -143,6 +143,8 @@ internal sealed class FullscreenBar : Window
 
     public void SetModeActionLabel(string label) => _modeButton.Content = label;
 
+    public void SetTitle(string title) => _title.Text = title;
+
     private void PollCursor()
     {
         if (!GetCursorPos(out var p))
