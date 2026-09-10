@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -90,9 +92,9 @@ public partial class MainWindow : Window
     private void OnViewMenu(object sender, RoutedEventArgs e)
     {
         MenuVersion.Header = $"LWP-TERM {App.Services.GetRequiredService<IUpdateService>().CurrentVersion}";
-        MenuPaneSessions.IsChecked = SessionsPane.IsVisible;
-        MenuPaneTransfers.IsChecked = TransfersPane.IsVisible;
-        MenuPaneLog.IsChecked = LogPane.IsVisible;
+        MenuPaneSessions.IsChecked = LivePane("sessions")?.IsVisible ?? false;
+        MenuPaneTransfers.IsChecked = LivePane("transfers")?.IsVisible ?? false;
+        MenuPaneLog.IsChecked = LivePane("log")?.IsVisible ?? false;
         MenuFullScreen.IsChecked = _fsMode == FullscreenMode.FullScreen;
         MenuBorderless.IsChecked = _fsMode == FullscreenMode.Borderless;
         RebuildLayoutsSubmenu();
@@ -140,15 +142,15 @@ public partial class MainWindow : Window
 
     private void OnTogglePane(object sender, RoutedEventArgs e)
     {
-        var pane = (sender as MenuItem)?.Tag switch
+        var contentId = (sender as MenuItem)?.Tag switch
         {
-            "Sessions" => SessionsPane,
-            "Transfers" => TransfersPane,
-            "Log" => LogPane,
+            "Sessions" => "sessions",
+            "Transfers" => "transfers",
+            "Log" => "log",
             _ => null
         };
 
-        if (pane is null)
+        if (contentId is null || LivePane(contentId) is not { } pane)
         {
             return;
         }
@@ -162,6 +164,15 @@ public partial class MainWindow : Window
             pane.Show();
         }
     }
+
+    /// <summary>Finds a panel in the <em>current</em> layout by its ContentId. The
+    /// x:Name'd LayoutAnchorable fields go stale once a saved layout.xml is
+    /// restored (deserialization swaps in new objects).</summary>
+    private LayoutAnchorable? LivePane(string contentId) => LivePanes(contentId).FirstOrDefault();
+
+    private IEnumerable<LayoutAnchorable> LivePanes(params string[] contentIds) =>
+        Dock.Layout.Descendents().OfType<LayoutAnchorable>()
+            .Where(a => a.ContentId is { } id && contentIds.Contains(id));
 
     private void OnResetLayout(object sender, RoutedEventArgs e)
     {
@@ -233,7 +244,8 @@ public partial class MainWindow : Window
     private Visibility _fsSavedToolbar;
     private Visibility _fsSavedStatus;
     private bool _fsSavedDocHeader;
-    private (bool Sessions, bool Transfers, bool Log) _fsSavedPanes;
+    private LayoutDocumentPane? _fsDocPane;
+    private readonly List<LayoutAnchorable> _fsHiddenPanes = new();
 
     private void OnMenuFullScreen(object sender, RoutedEventArgs e)
     {
@@ -315,8 +327,6 @@ public partial class MainWindow : Window
             _fsSavedBounds = new Rect(Left, Top, Width, Height);
             _fsSavedToolbar = ToolbarBar.Visibility;
             _fsSavedStatus = StatusBar.Visibility;
-            _fsSavedDocHeader = DocPane.ShowHeader;
-            _fsSavedPanes = (SessionsPane.IsVisible, TransfersPane.IsVisible, LogPane.IsVisible);
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
 
@@ -338,22 +348,25 @@ public partial class MainWindow : Window
 
         // Hide the chrome *in place* — the session surface never moves, so its
         // child HWND (RDP / VNC / WebView2) is never dropped or re-parented.
+        // The panes are looked up in the *live* layout: a restored layout.xml
+        // replaces the objects the x:Name fields point at.
         ToolbarBar.Visibility = Visibility.Collapsed;
         StatusBar.Visibility = Visibility.Collapsed;
-        DocPane.ShowHeader = false;
-        if (SessionsPane.IsVisible)
-        {
-            SessionsPane.Hide();
-        }
 
-        if (TransfersPane.IsVisible)
+        if (!switching)
         {
-            TransfersPane.Hide();
-        }
+            foreach (var pane in LivePanes("sessions", "transfers", "log").Where(p => p.IsVisible).ToList())
+            {
+                pane.Hide();
+                _fsHiddenPanes.Add(pane);
+            }
 
-        if (LogPane.IsVisible)
-        {
-            LogPane.Hide();
+            _fsDocPane = Dock.Layout.Descendents().OfType<LayoutDocumentPane>().FirstOrDefault();
+            if (_fsDocPane is not null)
+            {
+                _fsSavedDocHeader = _fsDocPane.ShowHeader;
+                _fsDocPane.ShowHeader = false;
+            }
         }
 
         InstallKeyboardHook();
@@ -376,21 +389,19 @@ public partial class MainWindow : Window
 
         ToolbarBar.Visibility = _fsSavedToolbar;
         StatusBar.Visibility = _fsSavedStatus;
-        DocPane.ShowHeader = _fsSavedDocHeader;
-        if (_fsSavedPanes.Sessions)
+
+        if (_fsDocPane is not null)
         {
-            SessionsPane.Show();
+            _fsDocPane.ShowHeader = _fsSavedDocHeader;
+            _fsDocPane = null;
         }
 
-        if (_fsSavedPanes.Transfers)
+        foreach (var pane in _fsHiddenPanes)
         {
-            TransfersPane.Show();
+            pane.Show();
         }
 
-        if (_fsSavedPanes.Log)
-        {
-            LogPane.Show();
-        }
+        _fsHiddenPanes.Clear();
 
         Topmost = _fsSavedTopmost;
         WindowStyle = _fsSavedStyle;

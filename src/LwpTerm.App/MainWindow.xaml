@@ -172,7 +172,7 @@
                     </avalonDock:LayoutAnchorablePane>
 
                     <avalonDock:LayoutPanel Orientation="Vertical">
-                        <avalonDock:LayoutDocumentPane x:Name="DocPane" />
+                        <avalonDock:LayoutDocumentPane />
 
                         <avalonDock:LayoutAnchorablePane DockHeight="190">
                             <avalonDock:LayoutAnchorable x:Name="TransfersPane"
