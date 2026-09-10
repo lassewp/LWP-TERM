@@ -108,10 +108,12 @@ vpk pack --packId LwpTerm --packVersion 0.2.0 --packDir publish --mainExe LwpTer
   (theme, terminal font / size / scrollback, default shell, master-password enable/disable);
   light + dark palette (applied at startup); per-session accent colour in the tree; import of
   saved PuTTY sessions from the registry. Document floating (tear-off) is AvalonDock's built-in.
-- **Full screen** — <kbd>F11</kbd> (or the toolbar button / gear menu / double-click a tab
-  header) blows the active session up to fill the monitor with no app chrome; <kbd>Shift</kbd>+<kbd>F11</kbd>
-  is borderless full screen, which also covers the taskbar. <kbd>Esc</kbd> or the same key exits.
-  F11 / Esc are caught even while an RDP / VNC / terminal surface holds keyboard focus.
+- **Full screen** — the ⛶ icon on a tab header (or <kbd>F11</kbd> / the toolbar button / the gear
+  menu / double-clicking the tab) blows the active session up to fill the monitor with no app
+  chrome; <kbd>Shift</kbd>+<kbd>F11</kbd> is borderless full screen, which also covers the taskbar.
+  An mstsc-style bar drops from the top edge with the session host and Exit / mode / pin / minimise;
+  <kbd>Esc</kbd> or <kbd>F11</kbd> also exits, and both are caught by a low-level keyboard hook even
+  while an RDP / VNC / terminal surface holds keyboard focus.
 
 ## Manual verification
 
