@@ -379,15 +379,18 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>The bar's "Show LWP-TERM" button. A same-process request like this
-    /// isn't subject to the foreground-lock restriction that routinely makes a
-    /// taskbar click (from explorer.exe, a different process) just flash instead
-    /// of actually switching while a Topmost/actively-focused window is up.</summary>
+    /// <summary>The bar's "Show LWP-TERM" button. Dropping Topmost and calling
+    /// Activate() while the full-screen window stays visible was not enough —
+    /// the mstsc ActiveX control appears to reclaim foreground focus for its own
+    /// top-level window almost immediately, so nothing visibly changed. Minimise
+    /// the full-screen window outright instead: with no competing visible window
+    /// left, there is nothing for it to steal focus back to. Its taskbar entry
+    /// still restores it normally.</summary>
     private void BringMainWindowForward()
     {
-        if (_fsWindow is { Borderless: true })
+        if (_fsWindow is not null)
         {
-            _fsWindow.Topmost = false;
+            _fsWindow.WindowState = WindowState.Minimized;
         }
 
         if (WindowState == WindowState.Minimized)
