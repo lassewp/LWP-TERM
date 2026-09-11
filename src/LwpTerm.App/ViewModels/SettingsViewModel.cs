@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LwpTerm.App.Views.Dialogs;
@@ -32,6 +34,16 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public Array Themes => Enum.GetValues<AppTheme>();
     public Array Shells => Enum.GetValues<LocalShellKind>();
+
+    /// <summary>Installed fonts, for the searchable terminal-font picker. The field
+    /// still holds a free-text CSS-style fallback stack ("Cascadia Mono, Consolas,
+    /// monospace") — picking one from the list replaces it with just that name;
+    /// typing is still open for anyone who wants a custom stack.</summary>
+    public ObservableCollection<string> AvailableFonts { get; } = new(
+        Fonts.SystemFontFamilies
+            .Select(f => f.Source)
+            .Distinct()
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase));
 
     [ObservableProperty] private AppTheme _theme;
     [ObservableProperty] private string _terminalFontFamily;

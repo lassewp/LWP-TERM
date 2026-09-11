@@ -53,7 +53,16 @@
                     <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" />
 
                     <TextBlock Text="Terminal font family" Style="{StaticResource L}" />
-                    <TextBox Text="{Binding TerminalFontFamily, UpdateSourceTrigger=PropertyChanged}" />
+                    <ComboBox IsEditable="True" IsTextSearchEnabled="True" StaysOpenOnEdit="True"
+                              ItemsSource="{Binding AvailableFonts}"
+                              Text="{Binding TerminalFontFamily, UpdateSourceTrigger=PropertyChanged}"
+                              ToolTip="Type to search, or pick a font — you can still enter a comma-separated fallback list like 'Cascadia Mono, Consolas, monospace'">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontFamily="{Binding}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
