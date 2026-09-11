@@ -79,6 +79,26 @@ public sealed class RdpSessionHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// Nudge the ActiveX surface to repaint after <see cref="View"/> has been
+    /// re-parented across top-level windows (e.g. leaving full screen). The
+    /// mstsc control can go visually blank after a native SetParent even
+    /// though the session is still connected — a tiny resize forces it to
+    /// re-establish its rendering surface, which a plain repaint does not.
+    /// </summary>
+    public void NotifyReattached()
+    {
+        if (_disposed || _panel is null || _panel.ClientSize is not { Width: > 2, Height: > 2 } size)
+        {
+            return;
+        }
+
+        _panel.ClientSize = new System.Drawing.Size(size.Width - 1, size.Height);
+        _panel.ClientSize = size;
+        _panel.Invalidate(true);
+        _panel.Update();
+    }
+
     /// <summary>Tear down the dropped ActiveX control and dial the host again at the last known size.</summary>
     public void Reconnect()
     {
