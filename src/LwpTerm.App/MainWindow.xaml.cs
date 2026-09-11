@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Themes;
@@ -374,7 +375,13 @@ public partial class MainWindow : Window
 
         ExitFullscreen();
         _viewModel.ActiveDocument = session;
-        EnterFullscreen(target);
+
+        // Let the just-recreated docked view actually get a layout/render
+        // pass before stealing its surface straight back out — doing both
+        // re-parents in one synchronous call (as switching modes otherwise
+        // would) leaves the RDP/VNC control's rendering pipeline stuck, even
+        // though a "settled" fresh attach always works.
+        Dispatcher.BeginInvoke(new Action(() => EnterFullscreen(target)), DispatcherPriority.Background);
     }
 
     /// <summary>The monitor the main window is currently on — full screen opens there,
