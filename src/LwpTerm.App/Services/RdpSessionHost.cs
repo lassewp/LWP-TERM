@@ -4,6 +4,7 @@ using System.Windows.Forms.Integration;
 using System.Windows.Threading;
 using AxMSTSCLib;
 using LwpTerm.Core.Sessions;
+using Microsoft.Extensions.Logging;
 using WinFormsDockStyle = System.Windows.Forms.DockStyle;
 using WinFormsPanel = System.Windows.Forms.Panel;
 
@@ -21,6 +22,7 @@ public sealed class RdpSessionHost : IDisposable
 
     private readonly RdpConnectionSettings _settings;
     private readonly string? _password;
+    private readonly ILogger? _log;
     private readonly DispatcherTimer _resizeDebounce;
 
     private AxMsRdpClient9NotSafeForScripting? _rdp;
@@ -33,10 +35,11 @@ public sealed class RdpSessionHost : IDisposable
     private int _lastW;
     private int _lastH;
 
-    public RdpSessionHost(RdpConnectionSettings settings, string? password)
+    public RdpSessionHost(RdpConnectionSettings settings, string? password, ILogger? log = null)
     {
         _settings = settings;
         _password = password;
+        _log = log;
         View = new WindowsFormsHost();
 
         _resizeDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
@@ -56,6 +59,7 @@ public sealed class RdpSessionHost : IDisposable
     {
         if (_disposed || widthPx < MinAxis || heightPx < MinAxis)
         {
+            _log?.LogDebug("Rdp.EnsureStartedOrResized: skipped (disposed={Disposed} w={W} h={H})", _disposed, widthPx, heightPx);
             return;
         }
 
@@ -66,9 +70,14 @@ public sealed class RdpSessionHost : IDisposable
 
         if (!_started)
         {
+            _log?.LogDebug("Rdp.EnsureStartedOrResized: starting at {W}x{H}", widthPx, heightPx);
             Start(widthPx, heightPx);
             return;
         }
+
+        _log?.LogDebug(
+            "Rdp.EnsureStartedOrResized: started, connected={Connected} fitToWindow={Fit} -> {W}x{H}",
+            _connected, FitToWindow, widthPx, heightPx);
 
         if (_connected && FitToWindow)
         {
@@ -88,6 +97,14 @@ public sealed class RdpSessionHost : IDisposable
     /// </summary>
     public void NotifyReattached()
     {
+        _log?.LogDebug(
+            "Rdp.NotifyReattached: disposed={Disposed} panelNull={PanelNull} rdpNull={RdpNull} " +
+            "panelVisible={PanelVisible} panelHandle={PanelHandle} panelSize={PanelSize} viewIsVisible={ViewIsVisible} " +
+            "rdpConnected={RdpConnected}",
+            _disposed, _panel is null, _rdp is null,
+            _panel?.Visible, _panel?.IsHandleCreated == true ? _panel.Handle.ToString() : "n/a", _panel?.ClientSize,
+            View.IsVisible, _rdp?.Connected);
+
         if (_disposed || _panel is null || _panel.ClientSize is not { Width: > 2, Height: > 2 } size)
         {
             return;
@@ -97,6 +114,7 @@ public sealed class RdpSessionHost : IDisposable
         _panel.ClientSize = size;
         _panel.Invalidate(true);
         _panel.Update();
+        _log?.LogDebug("Rdp.NotifyReattached: nudged panel to {Size}", size);
     }
 
     /// <summary>Tear down the dropped ActiveX control and dial the host again at the last known size.</summary>

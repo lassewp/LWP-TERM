@@ -310,9 +310,15 @@ public partial class MainWindow : Window
         // The surface has already been handed back to the docked tab by
         // SessionFullscreenWindow.OnClosing — this just clears our own state.
         _viewModel.Documents.CollectionChanged -= OnFullscreenDocumentsChanged;
+        var session = _fsSession;
         _fsWindow = null;
         _fsSession = null;
         _fsMode = FullscreenMode.None;
+
+        if (session is not null)
+        {
+            RecreateDockedView(session);
+        }
     }
 
     private void OnFullscreenDocumentsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -320,6 +326,40 @@ public partial class MainWindow : Window
         if (_fsSession is not null && !_viewModel.Documents.Contains(_fsSession))
         {
             _fsWindow?.Close();
+        }
+    }
+
+    /// <summary>
+    /// Forces AvalonDock to rebuild the tab's document view from scratch — the
+    /// same "Reset layout" always fixes this: a docked RdpView/VncView that
+    /// sat idle (Loaded, but its surface stolen) the whole time full screen
+    /// was open cannot be reliably woken back up by re-attaching the live
+    /// surface into it, even though the surface itself and the session both
+    /// remain fine. A view going through a fresh Loaded cycle always renders
+    /// correctly, matching every case that already worked (entering full
+    /// screen, Reset layout). Removing and reinserting the tab at the same
+    /// index makes AvalonDock do exactly that; Dock.DocumentClosed is
+    /// suspended around it purely to stop OnDocumentClosed disposing the tab.
+    /// </summary>
+    private void RecreateDockedView(SessionTabViewModel session)
+    {
+        var documents = _viewModel.Documents;
+        var index = documents.IndexOf(session);
+        if (index < 0)
+        {
+            return; // the tab was closed while full screen
+        }
+
+        Dock.DocumentClosed -= OnDocumentClosed;
+        try
+        {
+            documents.RemoveAt(index);
+            documents.Insert(index, session);
+            _viewModel.ActiveDocument = session;
+        }
+        finally
+        {
+            Dock.DocumentClosed += OnDocumentClosed;
         }
     }
 
