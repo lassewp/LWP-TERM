@@ -46,6 +46,20 @@ public partial class MainWindow : Window
         Dock.DocumentClosed += OnDocumentClosed;
         Loaded += OnLoaded;
         Closing += OnClosing;
+
+        // Borderless full screen keeps the session window Topmost so it covers
+        // the taskbar; that only drops via its OWN Deactivated, which isn't
+        // reliably raised by every way you can bring this window forward
+        // (taskbar click, Alt+Tab). Force it here too, directly, whenever this
+        // window actually becomes active — otherwise there was no reliable way
+        // to get the main app back on top of a borderless session.
+        Activated += (_, _) =>
+        {
+            if (_fsWindow is { Borderless: true })
+            {
+                _fsWindow.Topmost = false;
+            }
+        };
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
