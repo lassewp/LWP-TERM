@@ -28,6 +28,15 @@ internal sealed class SessionFullscreenWindow : Window
     /// windowed ⇄ borderless. The argument is the requested "borderless" state.</summary>
     public event Action<bool>? ModeToggleRequested;
 
+    /// <summary>Raised by the bar's "Show LWP-TERM" button — a direct, same-process
+    /// way to bring the main window forward. Windows' anti-focus-stealing
+    /// protection routinely blocks a taskbar click (a *different* process,
+    /// explorer.exe, asking to activate a window over this one) from actually
+    /// switching, even after Topmost is dropped; a click inside this already-
+    /// foreground window asking for another window of the SAME process is not
+    /// subject to that restriction.</summary>
+    public event Action? ShowMainWindowRequested;
+
     public SessionTabViewModel Session { get; }
 
     public bool Borderless { get; }
@@ -72,6 +81,7 @@ internal sealed class SessionFullscreenWindow : Window
         _bar.ExitRequested += Close;
         _bar.MinimiseRequested += () => WindowState = WindowState.Minimized;
         _bar.ToggleModeRequested += () => ModeToggleRequested?.Invoke(!Borderless);
+        _bar.ShowMainWindowRequested += () => ShowMainWindowRequested?.Invoke();
 
         Activated += (_, _) => { if (Borderless) Topmost = true; };
         Deactivated += (_, _) => { if (Borderless) Topmost = false; };

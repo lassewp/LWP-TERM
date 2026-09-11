@@ -309,6 +309,7 @@ public partial class MainWindow : Window
             Owner = this,
         };
         window.ModeToggleRequested += SwitchFullscreenMode;
+        window.ShowMainWindowRequested += BringMainWindowForward;
         window.Closed += (_, _) => OnFullscreenWindowClosed();
         _fsWindow = window;
 
@@ -376,6 +377,25 @@ public partial class MainWindow : Window
         {
             Dock.DocumentClosed += OnDocumentClosed;
         }
+    }
+
+    /// <summary>The bar's "Show LWP-TERM" button. A same-process request like this
+    /// isn't subject to the foreground-lock restriction that routinely makes a
+    /// taskbar click (from explorer.exe, a different process) just flash instead
+    /// of actually switching while a Topmost/actively-focused window is up.</summary>
+    private void BringMainWindowForward()
+    {
+        if (_fsWindow is { Borderless: true })
+        {
+            _fsWindow.Topmost = false;
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Activate();
     }
 
     private void SwitchFullscreenMode(bool borderless)
