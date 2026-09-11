@@ -62,7 +62,10 @@ internal sealed class SessionFullscreenWindow : Window
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
 
-        _bar = new FullscreenBar(this);
+        // Owned by the (already-shown) main window, not by `this` — WPF refuses
+        // to set Owner to a window that has not been shown previously, and this
+        // window is still under construction here.
+        _bar = new FullscreenBar(Application.Current.MainWindow);
         _bar.ExitRequested += Close;
         _bar.MinimiseRequested += () => WindowState = WindowState.Minimized;
         _bar.ToggleModeRequested += () => ModeToggleRequested?.Invoke(!Borderless);
