@@ -307,15 +307,12 @@ public partial class MainWindow : Window
 
     private void OnFullscreenWindowClosed()
     {
+        // The surface has already been handed back to the docked tab by
+        // SessionFullscreenWindow.OnClosing — this just clears our own state.
         _viewModel.Documents.CollectionChanged -= OnFullscreenDocumentsChanged;
-
-        var session = _fsSession;
         _fsWindow = null;
         _fsSession = null;
         _fsMode = FullscreenMode.None;
-
-        // The docked tab view kept running behind the scenes; hand its surface back.
-        session?.ReclaimSurface();
     }
 
     private void OnFullscreenDocumentsChanged(object? sender, NotifyCollectionChangedEventArgs e)

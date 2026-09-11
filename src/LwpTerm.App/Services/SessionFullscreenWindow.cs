@@ -110,14 +110,15 @@ internal sealed class SessionFullscreenWindow : Window
     {
         base.OnClosing(e);
 
-        // Remove the hosted view from our content *now*, synchronously, rather
-        // than letting Window teardown unload it — that is not reliably ordered
-        // before MainWindow.OnFullscreenWindowClosed asks the docked tab to
-        // reclaim the surface, which was leaving the tab blank after exit.
-        if (_host.Content is not null)
-        {
-            _host.Content = null;
-        }
+        // Ask the docked tab to reclaim the surface NOW, while this window
+        // (and its native HWND) is still fully alive — reclaiming only after
+        // Close() completes races the native teardown: if the RDP/VNC
+        // control's child HWND has not actually been re-parented away yet
+        // when this window's own HWND is destroyed, Windows destroys the
+        // child along with it, and no amount of local repaint recovers a
+        // destroyed window handle. This is what was leaving the docked tab
+        // permanently black after exiting full screen.
+        Session.ReclaimSurface();
     }
 
     protected override void OnClosed(EventArgs e)
