@@ -340,20 +340,10 @@ public partial class MainWindow : Window
         EnterFullscreen(target);
     }
 
-    /// <summary>Prefer a monitor the main window is <em>not</em> on, so both stay visible.</summary>
-    private WinFormsScreen PickFullscreenScreen()
-    {
-        var mine = WinFormsScreen.FromHandle(new WindowInteropHelper(this).Handle);
-        foreach (var screen in WinFormsScreen.AllScreens)
-        {
-            if (!screen.Bounds.Equals(mine.Bounds))
-            {
-                return screen;
-            }
-        }
-
-        return mine;
-    }
+    /// <summary>The monitor the main window is currently on — full screen opens there,
+    /// same as every other app's F11, rather than hopping to a different screen.</summary>
+    private WinFormsScreen PickFullscreenScreen() =>
+        WinFormsScreen.FromHandle(new WindowInteropHelper(this).Handle);
 
     private Rect ToDip(double left, double top, double right, double bottom)
     {

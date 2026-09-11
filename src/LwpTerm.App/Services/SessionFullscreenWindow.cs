@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +19,7 @@ internal sealed class SessionFullscreenWindow : Window
 {
     private readonly (int Left, int Top, int Right, int Bottom) _px;
     private readonly FullscreenBar _bar;
+    private readonly ContentControl _host;
 
     private IntPtr _kbHook = IntPtr.Zero;
     private LowLevelKeyboardProc? _kbHookProc;
@@ -54,13 +56,14 @@ internal sealed class SessionFullscreenWindow : Window
         Width = preBoundsDip.Width;
         Height = preBoundsDip.Height;
 
-        Content = new ContentControl
+        _host = new ContentControl
         {
             Focusable = false,
             Content = session,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
+        Content = _host;
 
         // Owned by the (already-shown) main window, not by `this` — WPF refuses
         // to set Owner to a window that has not been shown previously, and this
@@ -101,6 +104,20 @@ internal sealed class SessionFullscreenWindow : Window
             new Rect(Left, Top, Width, Height),
             (_px.Left, _px.Top, _px.Right, _px.Bottom),
             Borderless ? "Windowed full screen" : "Borderless full screen");
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+
+        // Remove the hosted view from our content *now*, synchronously, rather
+        // than letting Window teardown unload it — that is not reliably ordered
+        // before MainWindow.OnFullscreenWindowClosed asks the docked tab to
+        // reclaim the surface, which was leaving the tab blank after exit.
+        if (_host.Content is not null)
+        {
+            _host.Content = null;
+        }
     }
 
     protected override void OnClosed(EventArgs e)
