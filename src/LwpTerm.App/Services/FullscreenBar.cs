@@ -35,6 +35,7 @@ internal sealed class FullscreenBar : Window
     public event Action? ExitRequested;
     public event Action? ToggleModeRequested;
     public event Action? MinimiseRequested;
+    public event Action? ShowMainWindowRequested;
 
     public FullscreenBar(Window owner)
     {
@@ -69,6 +70,7 @@ internal sealed class FullscreenBar : Window
         };
         _pin.Checked += (_, _) => UpdateAutoHide();
         _pin.Unchecked += (_, _) => UpdateAutoHide();
+        var mainButton = MakeButton("Show LWP-TERM", () => ShowMainWindowRequested?.Invoke());
         var minButton = MakeButton("Minimise", () => MinimiseRequested?.Invoke());
         var exitButton = MakeButton("Exit full screen", () => ExitRequested?.Invoke());
 
@@ -77,7 +79,7 @@ internal sealed class FullscreenBar : Window
             Orientation = Orientation.Horizontal,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 8, 0),
-            Children = { _modeButton, _pin, minButton, exitButton },
+            Children = { mainButton, _modeButton, _pin, minButton, exitButton },
         };
 
         var grid = new Grid

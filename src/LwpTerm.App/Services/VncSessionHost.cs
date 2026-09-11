@@ -54,6 +54,25 @@ public sealed class VncSessionHost : IDisposable
         _vnc.Connect(s.Host, s.ViewOnly, scaled: true);
     }
 
+    /// <summary>
+    /// Nudge the surface to repaint after <see cref="View"/> has been
+    /// re-parented across top-level windows (e.g. leaving full screen) — see
+    /// <see cref="RdpSessionHost.NotifyReattached"/> for why a resize, not
+    /// just a repaint, is what actually wakes it back up.
+    /// </summary>
+    public void NotifyReattached()
+    {
+        if (_disposed || _vnc is null || _vnc.ClientSize is not { Width: > 2, Height: > 2 } size)
+        {
+            return;
+        }
+
+        _vnc.ClientSize = new System.Drawing.Size(size.Width - 1, size.Height);
+        _vnc.ClientSize = size;
+        _vnc.Invalidate(true);
+        _vnc.Update();
+    }
+
     /// <summary>Drop the lost client and dial the host again.</summary>
     public void Reconnect()
     {

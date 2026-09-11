@@ -61,6 +61,7 @@ public partial class RdpView : UserControl
 
         AttachSurface();
         Push();
+        _vm?.Host.NotifyReattached();
     }
 
     private void AttachSurface()

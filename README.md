@@ -109,12 +109,14 @@ vpk pack --packId LwpTerm --packVersion 0.2.0 --packDir publish --mainExe LwpTer
   light + dark palette (applied at startup); per-session accent colour in the tree; import of
   saved PuTTY sessions from the registry. Document floating (tear-off) is AvalonDock's built-in.
 - **Full screen** — the ⛶ icon on a tab header (or <kbd>F11</kbd> / the toolbar button / the gear
-  menu / double-clicking the tab) lifts the active session into its own borderless window that
-  fills a monitor — the second one if you have it — while the main window stays open and usable.
-  <kbd>Shift</kbd> picks borderless (covers the taskbar) over windowed (work area). An mstsc-style
-  bar drops from the top edge with the session host and Exit / mode / pin / minimise; <kbd>Esc</kbd>
-  or <kbd>F11</kbd> also exit, caught by a low-level keyboard hook even while the RDP / VNC / terminal
-  surface holds keyboard focus. Closing the session's tab closes its full-screen window too.
+  menu / double-clicking the tab) lifts the active session into its own borderless window on the
+  monitor the app is on, while the main window stays open and usable behind it. <kbd>Shift</kbd>
+  picks borderless (covers the taskbar) over windowed (work area). An mstsc-style bar drops from
+  the top edge with the session host and Exit / mode / pin / minimise / **Show LWP-TERM** — the
+  last one minimises the full-screen window to bring the main app forward, since the RDP surface
+  otherwise reclaims foreground focus for itself. <kbd>Esc</kbd> or <kbd>F11</kbd> also exit,
+  caught by a low-level keyboard hook even while the RDP / VNC / terminal surface holds keyboard
+  focus. Closing the session's tab closes its full-screen window too.
 
 ## Manual verification
 
@@ -124,7 +126,7 @@ Build: `dotnet build` · Tests: `dotnet test` (68). Then, against real endpoints
 |---|---|
 | Unlimited saved sessions / Folders | Right-click Sessions ▸ New Folder / New Session; nest freely; restart — tree persists (`sessions.json`) |
 | Tabs | Open several sessions; drag a document tab out to float it; Ctrl+W closes |
-| Full screen | ⛶ / F11 pops the session into its own window on the 2nd monitor; main app still works; Esc / F11 return it to the tab (still live). Works with RDP / terminal focused |
+| Full screen | ⛶ / F11 pops the session into its own window; main app still works behind it. Esc / F11 return it to the tab (still live, works with RDP / terminal focused). Bar's "Show LWP-TERM" gets the main app back on top |
 | SSH | Session to a Linux host; run `tmux` / `vim`; first connect prompts to trust the host key |
 | Telnet | Session to a Telnet service; keys echo, screen apps redraw |
 | Serial | com0com pair or a device; set baud/parity; bytes flow, optional local echo |

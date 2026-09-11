@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +19,7 @@ internal sealed class SessionFullscreenWindow : Window
 {
     private readonly (int Left, int Top, int Right, int Bottom) _px;
     private readonly FullscreenBar _bar;
+    private readonly ContentControl _host;
 
     private IntPtr _kbHook = IntPtr.Zero;
     private LowLevelKeyboardProc? _kbHookProc;
@@ -25,6 +27,15 @@ internal sealed class SessionFullscreenWindow : Window
     /// <summary>Raised when the bar's mode button (or the API) asks to swap
     /// windowed ⇄ borderless. The argument is the requested "borderless" state.</summary>
     public event Action<bool>? ModeToggleRequested;
+
+    /// <summary>Raised by the bar's "Show LWP-TERM" button — a direct, same-process
+    /// way to bring the main window forward. Windows' anti-focus-stealing
+    /// protection routinely blocks a taskbar click (a *different* process,
+    /// explorer.exe, asking to activate a window over this one) from actually
+    /// switching, even after Topmost is dropped; a click inside this already-
+    /// foreground window asking for another window of the SAME process is not
+    /// subject to that restriction.</summary>
+    public event Action? ShowMainWindowRequested;
 
     public SessionTabViewModel Session { get; }
 
@@ -54,18 +65,23 @@ internal sealed class SessionFullscreenWindow : Window
         Width = preBoundsDip.Width;
         Height = preBoundsDip.Height;
 
-        Content = new ContentControl
+        _host = new ContentControl
         {
             Focusable = false,
             Content = session,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
+        Content = _host;
 
-        _bar = new FullscreenBar(this);
+        // Owned by the (already-shown) main window, not by `this` — WPF refuses
+        // to set Owner to a window that has not been shown previously, and this
+        // window is still under construction here.
+        _bar = new FullscreenBar(Application.Current.MainWindow);
         _bar.ExitRequested += Close;
         _bar.MinimiseRequested += () => WindowState = WindowState.Minimized;
         _bar.ToggleModeRequested += () => ModeToggleRequested?.Invoke(!Borderless);
+        _bar.ShowMainWindowRequested += () => ShowMainWindowRequested?.Invoke();
 
         Activated += (_, _) => { if (Borderless) Topmost = true; };
         Deactivated += (_, _) => { if (Borderless) Topmost = false; };
@@ -98,6 +114,21 @@ internal sealed class SessionFullscreenWindow : Window
             new Rect(Left, Top, Width, Height),
             (_px.Left, _px.Top, _px.Right, _px.Bottom),
             Borderless ? "Windowed full screen" : "Borderless full screen");
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+
+        // Ask the docked tab to reclaim the surface NOW, while this window
+        // (and its native HWND) is still fully alive — reclaiming only after
+        // Close() completes races the native teardown: if the RDP/VNC
+        // control's child HWND has not actually been re-parented away yet
+        // when this window's own HWND is destroyed, Windows destroys the
+        // child along with it, and no amount of local repaint recovers a
+        // destroyed window handle. This is what was leaving the docked tab
+        // permanently black after exiting full screen.
+        Session.ReclaimSurface();
     }
 
     protected override void OnClosed(EventArgs e)

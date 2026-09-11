@@ -48,10 +48,13 @@ public partial class VncView : UserControl
 
     private void OnSurfaceReclaimRequested(object? sender, EventArgs e)
     {
-        if (IsLoaded)
+        if (!IsLoaded)
         {
-            AttachSurface();
+            return;
         }
+
+        AttachSurface();
+        _vm?.Host.NotifyReattached();
     }
 
     private void AttachSurface()

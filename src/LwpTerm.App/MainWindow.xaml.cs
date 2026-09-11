@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Themes;
@@ -45,6 +46,20 @@ public partial class MainWindow : Window
         Dock.DocumentClosed += OnDocumentClosed;
         Loaded += OnLoaded;
         Closing += OnClosing;
+
+        // Borderless full screen keeps the session window Topmost so it covers
+        // the taskbar; that only drops via its OWN Deactivated, which isn't
+        // reliably raised by every way you can bring this window forward
+        // (taskbar click, Alt+Tab). Force it here too, directly, whenever this
+        // window actually becomes active — otherwise there was no reliable way
+        // to get the main app back on top of a borderless session.
+        Activated += (_, _) =>
+        {
+            if (_fsWindow is { Borderless: true })
+            {
+                _fsWindow.Topmost = false;
+            }
+        };
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -294,6 +309,7 @@ public partial class MainWindow : Window
             Owner = this,
         };
         window.ModeToggleRequested += SwitchFullscreenMode;
+        window.ShowMainWindowRequested += BringMainWindowForward;
         window.Closed += (_, _) => OnFullscreenWindowClosed();
         _fsWindow = window;
 
@@ -307,15 +323,18 @@ public partial class MainWindow : Window
 
     private void OnFullscreenWindowClosed()
     {
+        // The surface has already been handed back to the docked tab by
+        // SessionFullscreenWindow.OnClosing — this just clears our own state.
         _viewModel.Documents.CollectionChanged -= OnFullscreenDocumentsChanged;
-
         var session = _fsSession;
         _fsWindow = null;
         _fsSession = null;
         _fsMode = FullscreenMode.None;
 
-        // The docked tab view kept running behind the scenes; hand its surface back.
-        session?.ReclaimSurface();
+        if (session is not null)
+        {
+            RecreateDockedView(session);
+        }
     }
 
     private void OnFullscreenDocumentsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -324,6 +343,62 @@ public partial class MainWindow : Window
         {
             _fsWindow?.Close();
         }
+    }
+
+    /// <summary>
+    /// Forces AvalonDock to rebuild the tab's document view from scratch — the
+    /// same "Reset layout" always fixes this: a docked RdpView/VncView that
+    /// sat idle (Loaded, but its surface stolen) the whole time full screen
+    /// was open cannot be reliably woken back up by re-attaching the live
+    /// surface into it, even though the surface itself and the session both
+    /// remain fine. A view going through a fresh Loaded cycle always renders
+    /// correctly, matching every case that already worked (entering full
+    /// screen, Reset layout). Removing and reinserting the tab at the same
+    /// index makes AvalonDock do exactly that; Dock.DocumentClosed is
+    /// suspended around it purely to stop OnDocumentClosed disposing the tab.
+    /// </summary>
+    private void RecreateDockedView(SessionTabViewModel session)
+    {
+        var documents = _viewModel.Documents;
+        var index = documents.IndexOf(session);
+        if (index < 0)
+        {
+            return; // the tab was closed while full screen
+        }
+
+        Dock.DocumentClosed -= OnDocumentClosed;
+        try
+        {
+            documents.RemoveAt(index);
+            documents.Insert(index, session);
+            _viewModel.ActiveDocument = session;
+        }
+        finally
+        {
+            Dock.DocumentClosed += OnDocumentClosed;
+        }
+    }
+
+    /// <summary>The bar's "Show LWP-TERM" button. Dropping Topmost and calling
+    /// Activate() while the full-screen window stays visible was not enough —
+    /// the mstsc ActiveX control appears to reclaim foreground focus for its own
+    /// top-level window almost immediately, so nothing visibly changed. Minimise
+    /// the full-screen window outright instead: with no competing visible window
+    /// left, there is nothing for it to steal focus back to. Its taskbar entry
+    /// still restores it normally.</summary>
+    private void BringMainWindowForward()
+    {
+        if (_fsWindow is not null)
+        {
+            _fsWindow.WindowState = WindowState.Minimized;
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Activate();
     }
 
     private void SwitchFullscreenMode(bool borderless)
@@ -337,23 +412,19 @@ public partial class MainWindow : Window
 
         ExitFullscreen();
         _viewModel.ActiveDocument = session;
-        EnterFullscreen(target);
+
+        // Let the just-recreated docked view actually get a layout/render
+        // pass before stealing its surface straight back out — doing both
+        // re-parents in one synchronous call (as switching modes otherwise
+        // would) leaves the RDP/VNC control's rendering pipeline stuck, even
+        // though a "settled" fresh attach always works.
+        Dispatcher.BeginInvoke(new Action(() => EnterFullscreen(target)), DispatcherPriority.Background);
     }
 
-    /// <summary>Prefer a monitor the main window is <em>not</em> on, so both stay visible.</summary>
-    private WinFormsScreen PickFullscreenScreen()
-    {
-        var mine = WinFormsScreen.FromHandle(new WindowInteropHelper(this).Handle);
-        foreach (var screen in WinFormsScreen.AllScreens)
-        {
-            if (!screen.Bounds.Equals(mine.Bounds))
-            {
-                return screen;
-            }
-        }
-
-        return mine;
-    }
+    /// <summary>The monitor the main window is currently on — full screen opens there,
+    /// same as every other app's F11, rather than hopping to a different screen.</summary>
+    private WinFormsScreen PickFullscreenScreen() =>
+        WinFormsScreen.FromHandle(new WindowInteropHelper(this).Handle);
 
     private Rect ToDip(double left, double top, double right, double bottom)
     {
