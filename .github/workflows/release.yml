@@ -27,8 +27,16 @@ jobs:
           "value=$v" >> $env:GITHUB_OUTPUT
           Write-Host "Version: $v"
 
+      # vpk must match the Velopack package the app references (it warns, and may misbehave, when
+      # they differ), so take its version from the csproj instead of installing whatever is newest.
       - name: Install Velopack CLI
-        run: dotnet tool install -g vpk
+        shell: pwsh
+        run: |
+          $ref = Select-Xml -Path src/LwpTerm.App/LwpTerm.App.csproj -XPath "//PackageReference[@Include='Velopack']"
+          $ver = $ref.Node.Version
+          if (-not $ver) { throw 'Could not read the Velopack version from LwpTerm.App.csproj' }
+          Write-Host "Velopack library $ver -> installing vpk $ver"
+          dotnet tool install -g vpk --version $ver
 
       - name: Test
         run: dotnet test -c Release
