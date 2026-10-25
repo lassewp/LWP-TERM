@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using LwpTerm.App.Services;
 using LwpTerm.App.ViewModels.Tabs;
 
 namespace LwpTerm.App.Views.Tabs;
@@ -54,7 +55,7 @@ public partial class RdpView : UserControl
     /// <summary>A full-screen window that borrowed the surface has closed; take it back.</summary>
     private void OnSurfaceReclaimRequested(object? sender, EventArgs e)
     {
-        if (!IsLoaded)
+        if (!IsLoaded || SessionFullscreenWindow.Hosts(this))
         {
             return;
         }
@@ -66,17 +67,10 @@ public partial class RdpView : UserControl
 
     private void AttachSurface()
     {
-        if (_vm is null || ReferenceEquals(Slot.Content, _vm.Host.View))
+        if (_vm is not null)
         {
-            return;
+            SurfaceSlot.Attach(Slot, _vm.Host.View);
         }
-
-        if (_vm.Host.View.Parent is ContentPresenter previous)
-        {
-            previous.Content = null;
-        }
-
-        Slot.Content = _vm.Host.View;
     }
 
     private void Push()

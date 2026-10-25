@@ -26,6 +26,7 @@ public partial class MainWindow : Window
 {
     private readonly ILayoutPersistenceService _layout;
     private readonly MainWindowViewModel _viewModel;
+    private readonly DocumentPlacementStrategy _placement = new();
     private string? _pristineLayout;
 
     public MainWindow(MainWindowViewModel viewModel, ILayoutPersistenceService layout, ISettingsStore settings)
@@ -43,6 +44,7 @@ public partial class MainWindow : Window
 
         _pristineLayout = _layout.Capture(Dock);
 
+        Dock.LayoutUpdateStrategy = _placement;
         Dock.DocumentClosed += OnDocumentClosed;
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -83,11 +85,15 @@ public partial class MainWindow : Window
         _layout.Save(Dock);
     }
 
+    /// <summary>The tab's close button, the context-menu Close / Close All and a floating window's
+    /// close box all end up here. AvalonDock never removes a closed document from
+    /// <c>DocumentsSource</c> itself, so hand it to the view model — otherwise the disposed tab
+    /// lingers in <c>Documents</c> and AvalonDock re-imports it as a dead tab on the next layout reset.</summary>
     private void OnDocumentClosed(object? sender, DocumentClosedEventArgs e)
     {
         if (e.Document.Content is SessionTabViewModel tab)
         {
-            tab.Dispose();
+            _viewModel.CloseTabCommand.Execute(tab);
         }
     }
 
@@ -346,24 +352,33 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Forces AvalonDock to rebuild the tab's document view from scratch — the
-    /// same "Reset layout" always fixes this: a docked RdpView/VncView that
-    /// sat idle (Loaded, but its surface stolen) the whole time full screen
-    /// was open cannot be reliably woken back up by re-attaching the live
-    /// surface into it, even though the surface itself and the session both
-    /// remain fine. A view going through a fresh Loaded cycle always renders
-    /// correctly, matching every case that already worked (entering full
-    /// screen, Reset layout). Removing and reinserting the tab at the same
-    /// index makes AvalonDock do exactly that; Dock.DocumentClosed is
-    /// suspended around it purely to stop OnDocumentClosed disposing the tab.
+    /// Forces AvalonDock to rebuild an RDP / VNC tab's document view from scratch after full
+    /// screen. Their native ActiveX / WinForms windows can go blank after a cross-window
+    /// SetParent (see <see cref="RdpSessionHost.NotifyReattached"/>), while a view that goes through
+    /// a fresh Loaded cycle always renders correctly. Removing and reinserting the tab at the same
+    /// index makes AvalonDock do exactly that; Dock.DocumentClosed is suspended around it purely to
+    /// stop OnDocumentClosed removing the tab. AvalonDock re-imports a source item at the end of the
+    /// last-focused pane, so the tab's pane and slot are remembered first and
+    /// <see cref="DocumentPlacementStrategy"/> puts it back. A WebView2 terminal or a plain WPF tab
+    /// re-attaches on its own (SurfaceReclaimRequested) and so stays where it was, floating or docked.
     /// </summary>
     private void RecreateDockedView(SessionTabViewModel session)
     {
+        if (session is not (RdpTabViewModel or VncTabViewModel))
+        {
+            return;
+        }
+
         var documents = _viewModel.Documents;
         var index = documents.IndexOf(session);
         if (index < 0)
         {
             return; // the tab was closed while full screen
+        }
+
+        if (FindDocument(session) is { Parent: LayoutDocumentPane pane } doc)
+        {
+            _placement.Remember(session, pane, pane.IndexOfChild(doc));
         }
 
         Dock.DocumentClosed -= OnDocumentClosed;
@@ -372,12 +387,23 @@ public partial class MainWindow : Window
             documents.RemoveAt(index);
             documents.Insert(index, session);
             _viewModel.ActiveDocument = session;
+
+            // The binding above is a no-op if AvalonDock never cleared the active content.
+            if (FindDocument(session) is { } restored)
+            {
+                restored.IsSelected = true;
+                restored.IsActive = true;
+            }
         }
         finally
         {
+            _placement.Forget(session);
             Dock.DocumentClosed += OnDocumentClosed;
         }
     }
+
+    private LayoutDocument? FindDocument(SessionTabViewModel session) =>
+        Dock.Layout.Descendents().OfType<LayoutDocument>().FirstOrDefault(d => ReferenceEquals(d.Content, session));
 
     /// <summary>The bar's "Show LWP-TERM" button. Dropping Topmost and calling
     /// Activate() while the full-screen window stays visible was not enough —

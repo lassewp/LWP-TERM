@@ -41,6 +41,11 @@ internal sealed class SessionFullscreenWindow : Window
 
     public bool Borderless { get; }
 
+    /// <summary>True if <paramref name="view"/> lives in a full-screen window. That view is the one
+    /// handing the surface back, so it must not answer <c>SurfaceReclaimRequested</c> — doing so
+    /// pulls the surface straight back out of the docked view just before this window closes.</summary>
+    internal static bool Hosts(DependencyObject view) => GetWindow(view) is SessionFullscreenWindow;
+
     public SessionFullscreenWindow(
         SessionTabViewModel session,
         bool borderless,
