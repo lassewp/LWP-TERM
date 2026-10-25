@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using AvalonDock;
-using AvalonDock.Layout.Serialization;
+using AvalonDock.Core;
+using AvalonDock.Serializer.Xml;
 using LwpTerm.Core;
 using Microsoft.Extensions.Logging;
 

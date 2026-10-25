@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>LwpTerm.App</RootNamespace>
     <AssemblyName>LwpTerm</AssemblyName>
     <UseWPF>true</UseWPF>
@@ -17,8 +17,8 @@
     <!-- Custom entry point (Program.Main) so Velopack hooks run before WPF. -->
     <StartupObject>LwpTerm.App.Program</StartupObject>
     <!-- This is a WPF app; per-monitor DPI v2 is declared in app.manifest (which WPF honours).
-         WFAC010 is the WinForms-only guidance to move it to a project property. -->
-    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+         WFO0003 (WFAC010 before .NET 9) is the WinForms-only guidance to move it to a project property. -->
+    <NoWarn>$(NoWarn);WFAC010;WFO0003</NoWarn>
   </PropertyGroup>
 
   <!-- WinForms is enabled for hosting the RDP ActiveX control (M5). Drop its
@@ -54,8 +54,9 @@
     <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-    <PackageReference Include="Dirkster.AvalonDock" Version="4.72.0" />
-    <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.0" />
+    <PackageReference Include="Dirkster.AvalonDock" Version="5.0.1" />
+    <PackageReference Include="Dirkster.AvalonDock.Serializer.Xml" Version="5.0.1" />
+    <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="5.0.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
     <PackageReference Include="Velopack" Version="1.2.0" />

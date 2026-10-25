@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using LwpTerm.App.Services;
 using LwpTerm.App.ViewModels.Tabs;
 
 namespace LwpTerm.App.Views.Tabs;
@@ -48,7 +49,7 @@ public partial class TerminalView : UserControl
 
     private void OnSurfaceReclaimRequested(object? sender, EventArgs e)
     {
-        if (IsLoaded)
+        if (IsLoaded && !SessionFullscreenWindow.Hosts(this))
         {
             AttachSurface();
         }
@@ -56,16 +57,9 @@ public partial class TerminalView : UserControl
 
     private void AttachSurface()
     {
-        if (_vm is null || ReferenceEquals(Slot.Content, _vm.Host.View))
+        if (_vm is not null)
         {
-            return;
+            SurfaceSlot.Attach(Slot, _vm.Host.View);
         }
-
-        if (_vm.Host.View.Parent is ContentPresenter previous)
-        {
-            previous.Content = null;
-        }
-
-        Slot.Content = _vm.Host.View;
     }
 }

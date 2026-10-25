@@ -25,15 +25,17 @@ session management.
 ## Solution layout
 
 ```
-src/LwpTerm.Core          models, session store, crypto, settings  (net8.0)
-src/LwpTerm.Connections    protocol adapters                        (net8.0-windows)
-src/LwpTerm.App            WPF shell, view models, views            (net8.0-windows, x64)
+src/LwpTerm.Core          models, session store, crypto, settings  (net10.0-windows)
+src/LwpTerm.Connections    protocol adapters                        (net10.0-windows)
+src/LwpTerm.App            WPF shell, view models, views            (net10.0-windows, x64)
 tests/LwpTerm.Core.Tests   xUnit
+tests/LwpTerm.Connections.Tests   xUnit
 ```
 
 ## Build & run
 
-Requires the .NET 8 SDK and the WebView2 runtime (already present on current Windows 10/11).
+Requires the .NET 10 SDK (pinned in `global.json`) and the WebView2 runtime (already present on
+current Windows 10/11). Released builds are self-contained, so end users need no .NET runtime.
 
 ```bash
 dotnet build
@@ -120,7 +122,7 @@ vpk pack --packId LwpTerm --packVersion 0.2.0 --packDir publish --mainExe LwpTer
 
 ## Manual verification
 
-Build: `dotnet build` · Tests: `dotnet test` (68). Then, against real endpoints:
+Build: `dotnet build` · Tests: `dotnet test` (82). Then, against real endpoints:
 
 | Feature | Check |
 |---|---|
